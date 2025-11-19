@@ -61,7 +61,7 @@ export default async function DashboardPage() {
       },
       take: 5
     }),
-    // Upcoming trainings (scheduled in the future)
+    // Recent & upcoming trainings (unscheduled, or within 2 hours to future)
     prisma.workout.findMany({
       where: {
         AND: [
@@ -83,7 +83,11 @@ export default async function DashboardPage() {
           {
             OR: [
               { startTime: null },
-              { startTime: { gte: new Date() } }
+              { 
+                startTime: { 
+                  gte: new Date(Date.now() - 2 * 60 * 60 * 1000) // Show trainings from 2 hours ago or future
+                }
+              }
             ]
           }
         ]
@@ -342,7 +346,7 @@ export default async function DashboardPage() {
           {/* Upcoming Trainings */}
           <div className="bg-white rounded-xl shadow-sm border p-6">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold text-gray-900">📅 Upcoming Trainings</h2>
+              <h2 className="text-xl font-semibold text-gray-900">📅 Recent & Upcoming Trainings</h2>
               <a href="/trainings" className="text-sm text-blue-600 hover:text-blue-700">View all →</a>
             </div>
             {upcomingTrainings.length === 0 ? (
