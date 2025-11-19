@@ -68,9 +68,14 @@ export async function GET(
       )
     }
 
-    // Check if user is a member
+    // Check if user has access to this team
+    // User can access if they are:
+    // 1. A member of the team, OR
+    // 2. Have created a training for this team (substitute trainer)
     const isMember = team.members.some(m => m.userId === session.user.id)
-    if (!isMember) {
+    const hasTrainingForTeam = team.workouts.some(w => w.creator.id === session.user.id)
+    
+    if (!isMember && !hasTrainingForTeam) {
       return NextResponse.json(
         { error: "Access denied" },
         { status: 403 }

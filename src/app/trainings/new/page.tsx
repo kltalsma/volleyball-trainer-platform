@@ -55,7 +55,8 @@ export default function NewTrainingPage() {
 
   async function fetchTeams() {
     try {
-      const response = await fetch("/api/teams?myTeams=true")
+      // Fetch all teams so trainers can create trainings for any team (substitute trainer use case)
+      const response = await fetch("/api/teams")
       if (response.ok) {
         const data = await response.json()
         setTeams(data.teams || [])

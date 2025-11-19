@@ -1,16 +1,23 @@
 @import "tailwindcss";
 
 :root {
+  /* OPM Heerenveen Brand Colors */
+  --opm-navy: #060035;
+  --opm-teal: #00c49a;
+  --opm-dark-teal: #156464;
+  --opm-orange: #fb8f67;
+  --opm-light-orange: #ffc2b4;
+  
   /* Theme colors mapped to Tailwind's blue scale - overridden by ThemeProvider */
-  --blue-50: #eff6ff;
-  --blue-100: #dbeafe;
-  --blue-600: #2563eb;
-  --blue-700: #1d4ed8;
-  --blue-800: #1e40af;
+  --blue-50: #e6f9f5;
+  --blue-100: #b3ebe0;
+  --blue-600: #00c49a;
+  --blue-700: #009977;
+  --blue-800: #156464;
   
   /* Legacy variables */
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #060035;
+  --foreground: #ffffff;
 }
 
 @theme inline {

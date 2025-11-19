@@ -82,15 +82,26 @@ export default function TeamsPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
           <div className="flex items-center justify-between">
-            <div className="flex gap-4">
-              <select
-                value={viewFilter}
-                onChange={(e) => setViewFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="my">My Teams</option>
-                <option value="all">All Teams</option>
-              </select>
+            <div className="flex gap-4 items-center">
+              <label htmlFor="view-filter" className="text-sm font-medium text-gray-700">
+                View:
+              </label>
+              <div className="relative">
+                <select
+                  id="view-filter"
+                  value={viewFilter}
+                  onChange={(e) => setViewFilter(e.target.value)}
+                  className="px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900 cursor-pointer appearance-none"
+                >
+                  <option value="my">My Teams</option>
+                  <option value="all">All Teams</option>
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                  <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
             </div>
             <p className="text-sm text-gray-600">
               {loading ? "Loading..." : `${teams.length} team${teams.length !== 1 ? 's' : ''} found`}

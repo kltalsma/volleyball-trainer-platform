@@ -19,7 +19,8 @@ export async function GET(request: Request) {
     const limit = parseInt(searchParams.get("limit") || "20")
     const skip = (page - 1) * limit
 
-    // Default: show only user's own workouts and team workouts
+    // Default: show user's own workouts and workouts from teams they're members of
+    // Note: User can see ALL their created workouts regardless of team membership
     const where: any = {
       OR: [
         { creatorId: session.user.id },

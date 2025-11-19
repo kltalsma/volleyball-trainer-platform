@@ -59,6 +59,7 @@ model Team {
   name        String
   sportId     String
   description String?
+  creatorId   String
   
   // Volleybal.nl integration (optional)
   volleybalNlApiId    String?  // e.g., "/competitie/teams/ckl6f7m/meiden-b/1"
@@ -71,6 +72,7 @@ model Team {
   
   // Relations
   sport       Sport        @relation(fields: [sportId], references: [id])
+  creator     User         @relation(fields: [creatorId], references: [id])
   members     TeamMember[]
   workouts    Workout[]
   trainingSessions TrainingSession[]
