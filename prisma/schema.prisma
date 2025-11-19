@@ -111,6 +111,14 @@ model Exercise {
   videoUrl    String?
   tags        String[]
   views       Int       @default(0)
+  
+  // Enhanced filtering fields
+  techniques  String[]  @default([])  // e.g., ["attack", "defense", "serve", "pass", "block", "set"]
+  playerMin   Int?      // Minimum number of players
+  playerMax   Int?      // Maximum number of players
+  skillLevel  SkillLevel? // Skill level required for this exercise
+  materials   Json?     // e.g., [{ name: "Balls", quantity: 8 }, { name: "Cones", quantity: 4 }]
+  
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   
@@ -131,6 +139,12 @@ enum Difficulty {
   EASY
   MEDIUM
   HARD
+}
+
+enum SkillLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
 }
 
 model ExerciseCategory {

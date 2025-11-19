@@ -33,7 +33,13 @@ export default function NewExercisePage() {
     isPublic: false,
     videoUrl: "",
     tags: "",
-    diagram: ""
+    diagram: "",
+    // Enhanced filtering fields
+    techniques: [] as string[],
+    playerMin: "",
+    playerMax: "",
+    skillLevel: "",
+    materials: ""
   })
 
   // Fetch sports and categories
@@ -102,7 +108,13 @@ export default function NewExercisePage() {
           isPublic: formData.isPublic,
           videoUrl: formData.videoUrl || undefined,
           tags: formData.tags ? formData.tags.split(",").map(t => t.trim()) : [],
-          diagram: formData.diagram || undefined
+          diagram: formData.diagram || undefined,
+          // Enhanced filtering fields
+          techniques: formData.techniques.length > 0 ? formData.techniques : undefined,
+          playerMin: formData.playerMin ? parseInt(formData.playerMin) : undefined,
+          playerMax: formData.playerMax ? parseInt(formData.playerMax) : undefined,
+          skillLevel: formData.skillLevel || undefined,
+          materials: formData.materials ? JSON.parse(formData.materials) : undefined
         }),
       })
 
@@ -259,6 +271,109 @@ export default function NewExercisePage() {
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="passing, defense, warm-up"
             />
+          </div>
+
+          {/* Enhanced Filtering Section */}
+          <div className="border-t pt-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">🎯 Exercise Details (for better filtering)</h3>
+            
+            {/* Techniques - Multi-select */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Volleyball Techniques
+              </label>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                {['Attack', 'Defense', 'Serve', 'Pass', 'Block', 'Set'].map((tech) => (
+                  <label key={tech} className="flex items-center space-x-2 p-2 border rounded hover:bg-gray-50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.techniques.includes(tech.toLowerCase())}
+                      onChange={(e) => {
+                        const value = tech.toLowerCase()
+                        setFormData({
+                          ...formData,
+                          techniques: e.target.checked
+                            ? [...formData.techniques, value]
+                            : formData.techniques.filter(t => t !== value)
+                        })
+                      }}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <span className="text-sm text-gray-700">{tech}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Player Count and Skill Level */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label htmlFor="playerMin" className="block text-sm font-medium text-gray-700 mb-2">
+                  Min Players
+                </label>
+                <input
+                  id="playerMin"
+                  type="number"
+                  min="1"
+                  max="50"
+                  value={formData.playerMin}
+                  onChange={(e) => setFormData({ ...formData, playerMin: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="4"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="playerMax" className="block text-sm font-medium text-gray-700 mb-2">
+                  Max Players
+                </label>
+                <input
+                  id="playerMax"
+                  type="number"
+                  min="1"
+                  max="50"
+                  value={formData.playerMax}
+                  onChange={(e) => setFormData({ ...formData, playerMax: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="12"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="skillLevel" className="block text-sm font-medium text-gray-700 mb-2">
+                  Skill Level
+                </label>
+                <select
+                  id="skillLevel"
+                  value={formData.skillLevel}
+                  onChange={(e) => setFormData({ ...formData, skillLevel: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Any level</option>
+                  <option value="BEGINNER">Beginner</option>
+                  <option value="INTERMEDIATE">Intermediate</option>
+                  <option value="ADVANCED">Advanced</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Materials - JSON input (simplified) */}
+            <div className="mt-4">
+              <label htmlFor="materials" className="block text-sm font-medium text-gray-700 mb-2">
+                Materials (optional, JSON format)
+              </label>
+              <input
+                id="materials"
+                type="text"
+                value={formData.materials}
+                onChange={(e) => setFormData({ ...formData, materials: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder='[{"name": "Balls", "quantity": 8}, {"name": "Cones", "quantity": 4}]'
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Example: [&#123;"name": "Balls", "quantity": 8&#125;, &#123;"name": "Cones", "quantity": 4&#125;]
+              </p>
+            </div>
           </div>
 
           {/* Drawing Canvas */}

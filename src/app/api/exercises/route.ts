@@ -16,6 +16,12 @@ export async function GET(request: Request) {
     const difficulty = searchParams.get("difficulty")
     const search = searchParams.get("search")
     const myExercises = searchParams.get("myExercises") === "true"
+    
+    // Enhanced filtering params
+    const techniques = searchParams.get("techniques")?.split(",").filter(Boolean)
+    const playersAvailable = searchParams.get("playersAvailable") // Single value: "I have X players"
+    const skillLevel = searchParams.get("skillLevel")
+    
     const page = parseInt(searchParams.get("page") || "1")
     const limit = parseInt(searchParams.get("limit") || "20")
     const skip = (page - 1) * limit
@@ -42,6 +48,25 @@ export async function GET(request: Request) {
 
     if (difficulty) {
       where.difficulty = difficulty
+    }
+
+    // Enhanced filtering
+    if (techniques && techniques.length > 0) {
+      where.techniques = {
+        hasSome: techniques
+      }
+    }
+
+    // Player count filtering: "I have X players, show exercises that work with X players"
+    // This means: playerMin <= X AND playerMax >= X
+    if (playersAvailable) {
+      const count = parseInt(playersAvailable)
+      where.playerMin = { lte: count }
+      where.playerMax = { gte: count }
+    }
+
+    if (skillLevel) {
+      where.skillLevel = skillLevel
     }
 
     if (search) {
@@ -118,7 +143,13 @@ export async function POST(request: Request) {
       isPublic,
       diagram,
       videoUrl,
-      tags
+      tags,
+      // Enhanced filtering fields
+      techniques,
+      playerMin,
+      playerMax,
+      skillLevel,
+      materials
     } = body
 
     if (!title || !sportId) {
@@ -140,7 +171,13 @@ export async function POST(request: Request) {
         isPublic: isPublic || false,
         diagram,
         videoUrl,
-        tags: tags || []
+        tags: tags || [],
+        // Enhanced filtering fields
+        techniques: techniques || [],
+        playerMin,
+        playerMax,
+        skillLevel,
+        materials
       },
       include: {
         sport: true,

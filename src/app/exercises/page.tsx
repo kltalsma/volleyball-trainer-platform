@@ -32,6 +32,11 @@ export default function ExercisesPage() {
   const [difficultyFilter, setDifficultyFilter] = useState("")
   const [viewFilter, setViewFilter] = useState("all")
   const [searchQuery, setSearchQuery] = useState("")
+  
+  // Enhanced filters
+  const [techniqueFilters, setTechniqueFilters] = useState<string[]>([])
+  const [playerCountFilter, setPlayerCountFilter] = useState("")
+  const [skillLevelFilter, setSkillLevelFilter] = useState("")
 
   // Debounced search
   useEffect(() => {
@@ -40,7 +45,7 @@ export default function ExercisesPage() {
     }, 300)
     
     return () => clearTimeout(timer)
-  }, [categoryFilter, difficultyFilter, viewFilter, searchQuery])
+  }, [categoryFilter, difficultyFilter, viewFilter, searchQuery, techniqueFilters, playerCountFilter, skillLevelFilter])
 
   // Initial load
   useEffect(() => {
@@ -68,6 +73,11 @@ export default function ExercisesPage() {
       if (difficultyFilter) params.append("difficulty", difficultyFilter)
       if (viewFilter === "my") params.append("myExercises", "true")
       if (searchQuery) params.append("search", searchQuery)
+      
+      // Enhanced filters
+      if (techniqueFilters.length > 0) params.append("techniques", techniqueFilters.join(","))
+      if (playerCountFilter) params.append("playersAvailable", playerCountFilter)
+      if (skillLevelFilter) params.append("skillLevel", skillLevelFilter)
       
       const response = await fetch(`/api/exercises?${params.toString()}`)
       if (response.ok) {
@@ -174,6 +184,93 @@ export default function ExercisesPage() {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+          </div>
+
+          {/* Enhanced Filters */}
+          <div className="mt-6 pt-6 border-t">
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">🎯 Advanced Filters</h3>
+            
+            {/* Technique Filters */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Volleyball Techniques
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {['attack', 'defense', 'serve', 'pass', 'block', 'set'].map((tech) => (
+                  <button
+                    key={tech}
+                    type="button"
+                    onClick={() => {
+                      setTechniqueFilters(prev => 
+                        prev.includes(tech) 
+                          ? prev.filter(t => t !== tech)
+                          : [...prev, tech]
+                      )
+                    }}
+                    className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                      techniqueFilters.includes(tech)
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    {tech.charAt(0).toUpperCase() + tech.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Player Count and Skill Level */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="playerCount" className="block text-sm font-medium text-gray-700 mb-2">
+                  Players Available
+                </label>
+                <input
+                  id="playerCount"
+                  type="number"
+                  min="1"
+                  max="50"
+                  value={playerCountFilter}
+                  onChange={(e) => setPlayerCountFilter(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., 12 (shows exercises for up to 12 players)"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="skillLevelFilter" className="block text-sm font-medium text-gray-700 mb-2">
+                  Team Skill Level
+                </label>
+                <select
+                  id="skillLevelFilter"
+                  value={skillLevelFilter}
+                  onChange={(e) => setSkillLevelFilter(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">All Skill Levels</option>
+                  <option value="BEGINNER">Beginner</option>
+                  <option value="INTERMEDIATE">Intermediate</option>
+                  <option value="ADVANCED">Advanced</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Clear Filters Button */}
+            {(techniqueFilters.length > 0 || playerCountFilter || skillLevelFilter) && (
+              <div className="mt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTechniqueFilters([])
+                    setPlayerCountFilter("")
+                    setSkillLevelFilter("")
+                  }}
+                  className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  Clear Advanced Filters
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
