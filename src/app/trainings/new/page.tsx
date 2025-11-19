@@ -59,10 +59,17 @@ export default function NewTrainingPage() {
     if (preselectedExerciseId && exercises.length > 0 && selectedExercises.length === 0) {
       const exercise = exercises.find(ex => ex.id === preselectedExerciseId)
       if (exercise) {
-        addExercise(exercise)
+        const newExercise: SelectedExercise = {
+          exerciseId: exercise.id,
+          exercise,
+          order: 1,
+          duration: exercise.duration || 10,
+          notes: ""
+        }
+        setSelectedExercises([newExercise])
       }
     }
-  }, [preselectedExerciseId, exercises])
+  }, [preselectedExerciseId, exercises, selectedExercises.length])
 
   async function fetchTeams() {
     try {
