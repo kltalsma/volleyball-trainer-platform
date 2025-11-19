@@ -213,7 +213,7 @@ export default function NewSessionPage() {
             type="text"
             value={formData.title}
             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-            className="w-full border border-gray-300 rounded-lg px-4 py-2"
+            className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-white text-gray-900"
             placeholder="e.g., Evening Training"
             required
           />
@@ -228,7 +228,7 @@ export default function NewSessionPage() {
             type="datetime-local"
             value={formData.scheduledAt}
             onChange={(e) => setFormData({ ...formData, scheduledAt: e.target.value })}
-            className="w-full border border-gray-300 rounded-lg px-4 py-2"
+            className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-white text-gray-900"
             required
           />
         </div>
@@ -242,7 +242,7 @@ export default function NewSessionPage() {
             type="number"
             value={formData.duration}
             onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-            className="w-full border border-gray-300 rounded-lg px-4 py-2"
+            className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-white text-gray-900"
             placeholder="90"
             min="1"
           />
@@ -257,7 +257,7 @@ export default function NewSessionPage() {
             type="text"
             value={formData.location}
             onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-            className="w-full border border-gray-300 rounded-lg px-4 py-2"
+            className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-white text-gray-900"
             placeholder="e.g., Main Gym"
           />
         </div>
@@ -270,7 +270,7 @@ export default function NewSessionPage() {
           <textarea
             value={formData.description}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            className="w-full border border-gray-300 rounded-lg px-4 py-2"
+            className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-white text-gray-900"
             rows={3}
             placeholder="Additional notes or instructions..."
           />

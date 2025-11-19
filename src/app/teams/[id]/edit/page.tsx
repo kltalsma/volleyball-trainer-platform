@@ -342,7 +342,7 @@ export default function EditTeamPage({ params }: { params: Promise<{ id: string 
                 required
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
                 placeholder="e.g., OPM Heerenveen U19"
               />
             </div>
@@ -357,7 +357,7 @@ export default function EditTeamPage({ params }: { params: Promise<{ id: string 
                 rows={4}
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
                 placeholder="Team description, level, age group, etc."
               />
             </div>
@@ -419,7 +419,7 @@ export default function EditTeamPage({ params }: { params: Promise<{ id: string 
                       required
                       value={memberForm.email}
                       onChange={(e) => setMemberForm({ ...memberForm, email: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
                       placeholder="member@example.com"
                     />
                   </div>
@@ -433,7 +433,7 @@ export default function EditTeamPage({ params }: { params: Promise<{ id: string 
                       required
                       value={memberForm.name}
                       onChange={(e) => setMemberForm({ ...memberForm, name: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
                       placeholder="John Doe"
                     />
                   </div>
@@ -445,7 +445,7 @@ export default function EditTeamPage({ params }: { params: Promise<{ id: string 
                     <select
                       value={memberForm.role}
                       onChange={(e) => setMemberForm({ ...memberForm, role: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
                     >
                       <option value="PLAYER">Player</option>
                       <option value="COACH">Coach</option>
@@ -463,7 +463,7 @@ export default function EditTeamPage({ params }: { params: Promise<{ id: string 
                       type="number"
                       value={memberForm.number}
                       onChange={(e) => setMemberForm({ ...memberForm, number: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
                       placeholder="e.g., 7"
                     />
                   </div>
@@ -476,7 +476,7 @@ export default function EditTeamPage({ params }: { params: Promise<{ id: string 
                       type="text"
                       value={memberForm.position}
                       onChange={(e) => setMemberForm({ ...memberForm, position: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
                       placeholder="e.g., Outside Hitter, Setter, Libero"
                     />
                   </div>
@@ -567,7 +567,7 @@ export default function EditTeamPage({ params }: { params: Promise<{ id: string 
                             <select
                               defaultValue={member.role}
                               onChange={(e) => handleUpdateMember(member.id, { role: e.target.value })}
-                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
                             >
                               <option value="PLAYER">Player</option>
                               <option value="COACH">Coach</option>
@@ -587,7 +587,7 @@ export default function EditTeamPage({ params }: { params: Promise<{ id: string 
                               onBlur={(e) => handleUpdateMember(member.id, { 
                                 number: e.target.value ? parseInt(e.target.value) : null 
                               })}
-                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
                               placeholder="Jersey #"
                             />
                           </div>
@@ -600,7 +600,7 @@ export default function EditTeamPage({ params }: { params: Promise<{ id: string 
                               type="text"
                               defaultValue={member.position || ""}
                               onBlur={(e) => handleUpdateMember(member.id, { position: e.target.value || null })}
-                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
                               placeholder="Position"
                             />
                           </div>

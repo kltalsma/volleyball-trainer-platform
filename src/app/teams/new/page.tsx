@@ -227,7 +227,7 @@ export default function NewTeamPage() {
                   value={clubId}
                   onChange={(e) => setClubId(e.target.value)}
                   placeholder="Enter Club ID (e.g., ckl6f7m)"
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
                   onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), fetchVolleybalTeams())}
                 />
                 <button
@@ -249,7 +249,7 @@ export default function NewTeamPage() {
                     id="volleybal-team"
                     value={selectedVolleybalTeam}
                     onChange={(e) => handleSelectVolleybalTeam(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
                   >
                     <option value="">-- Select a team --</option>
                     {volleybalTeams.map((team) => (
@@ -282,7 +282,7 @@ export default function NewTeamPage() {
               required
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
               placeholder="e.g., OPM Heerenveen Dames 1"
             />
             {selectedVolleybalTeam && (
@@ -317,7 +317,7 @@ export default function NewTeamPage() {
               rows={4}
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
               placeholder="Team description, level, goals, etc."
             />
           </div>

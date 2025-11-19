@@ -163,7 +163,7 @@ export default function AddToTrainingButton({
                   value={selectedTrainingId}
                   onChange={(e) => setSelectedTrainingId(e.target.value)}
                   disabled={loading}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
                 >
                   <option value="">-- Choose a training --</option>
                   {trainings.map((training) => (
@@ -185,7 +185,7 @@ export default function AddToTrainingButton({
                   min="1"
                   value={customDuration}
                   onChange={(e) => setCustomDuration(parseInt(e.target.value) || 1)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
                 />
               </div>
 
@@ -199,7 +199,7 @@ export default function AddToTrainingButton({
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="e.g., Focus on technique, increase intensity..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
                 />
               </div>
 

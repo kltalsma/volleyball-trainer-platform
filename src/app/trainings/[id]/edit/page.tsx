@@ -359,7 +359,7 @@ export default function EditTrainingPage({ params }: { params: Promise<{ id: str
                 required
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
                 placeholder="e.g., Advanced Serving Practice"
               />
             </div>
@@ -374,7 +374,7 @@ export default function EditTrainingPage({ params }: { params: Promise<{ id: str
                 rows={3}
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
                 placeholder="Training goals and focus areas..."
               />
             </div>
@@ -388,7 +388,7 @@ export default function EditTrainingPage({ params }: { params: Promise<{ id: str
                 id="team"
                 value={formData.teamId}
                 onChange={(e) => setFormData({ ...formData, teamId: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
               >
                 <option value="">No team (personal)</option>
                 {teams.map((team) => (
@@ -410,7 +410,7 @@ export default function EditTrainingPage({ params }: { params: Promise<{ id: str
                   type="datetime-local"
                   value={formData.startTime}
                   onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
                 />
               </div>
 
@@ -423,7 +423,7 @@ export default function EditTrainingPage({ params }: { params: Promise<{ id: str
                   type="datetime-local"
                   value={formData.endTime}
                   onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
                 />
               </div>
 
@@ -437,7 +437,7 @@ export default function EditTrainingPage({ params }: { params: Promise<{ id: str
                   min="1"
                   value={formData.totalDuration}
                   onChange={(e) => setFormData({ ...formData, totalDuration: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
                   placeholder="90"
                 />
               </div>
@@ -649,7 +649,7 @@ export default function EditTrainingPage({ params }: { params: Promise<{ id: str
                               min="1"
                               value={workoutEx.duration || ""}
                               onChange={(e) => updateExerciseDuration(workoutEx.id, index, parseInt(e.target.value) || 1)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
                             />
                           </div>
                           <div>
@@ -660,7 +660,7 @@ export default function EditTrainingPage({ params }: { params: Promise<{ id: str
                               type="text"
                               value={workoutEx.notes || ""}
                               onChange={(e) => updateExerciseNotes(workoutEx.id, index, e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
                               placeholder="e.g., Focus on technique"
                             />
                           </div>

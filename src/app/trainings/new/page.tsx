@@ -270,7 +270,7 @@ export default function NewTrainingPage() {
                 readOnly={false}
                 disabled={false}
                 autoComplete="off"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
                 placeholder="e.g., Advanced Serving Practice"
                 style={{ pointerEvents: 'auto', userSelect: 'text' }}
               />
@@ -293,7 +293,7 @@ export default function NewTrainingPage() {
                 readOnly={false}
                 disabled={false}
                 autoComplete="off"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
                 placeholder="Training goals and focus areas..."
                 style={{ pointerEvents: 'auto', userSelect: 'text' }}
               />
@@ -349,7 +349,7 @@ export default function NewTrainingPage() {
                     console.log("Start time changed:", e.target.value)
                     setFormData({ ...formData, startTime: e.target.value })
                   }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white cursor-pointer"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 cursor-pointer"
                   step="300"
                 />
                 <p className="text-xs text-gray-500 mt-1">Click to select date and time</p>
@@ -367,7 +367,7 @@ export default function NewTrainingPage() {
                     console.log("End time changed:", e.target.value)
                     setFormData({ ...formData, endTime: e.target.value })
                   }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white cursor-pointer"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 cursor-pointer"
                   step="300"
                 />
                 <p className="text-xs text-gray-500 mt-1">Click to select date and time</p>
@@ -383,7 +383,7 @@ export default function NewTrainingPage() {
                   min="1"
                   value={formData.totalDuration}
                   onChange={(e) => setFormData({ ...formData, totalDuration: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
                   placeholder="90"
                 />
                 <p className="text-xs text-gray-500 mt-1">Optional: Total training length</p>
@@ -596,7 +596,7 @@ export default function NewTrainingPage() {
                               min="1"
                               value={selected.duration}
                               onChange={(e) => updateExerciseDuration(index, parseInt(e.target.value) || 1)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
                             />
                           </div>
                           <div>
@@ -607,7 +607,7 @@ export default function NewTrainingPage() {
                               type="text"
                               value={selected.notes}
                               onChange={(e) => updateExerciseNotes(index, e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
                               placeholder="e.g., Focus on technique"
                             />
                           </div>
