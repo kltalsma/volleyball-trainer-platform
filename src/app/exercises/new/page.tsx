@@ -55,8 +55,10 @@ export default function NewExercisePage() {
           const sportsData = await sportsRes.json()
           setSports(sportsData)
           
-          // Auto-select volleyball sport
+          // Auto-select volleyball sport (prefer exact match "Volleyball" over "Beach Volleyball")
           const volleyball = sportsData.find((s: Sport) => 
+            s.name.toLowerCase() === "volleyball"
+          ) || sportsData.find((s: Sport) => 
             s.name.toLowerCase().includes("volleyball")
           )
           if (volleyball) {

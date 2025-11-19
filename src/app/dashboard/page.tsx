@@ -10,25 +10,54 @@ export default async function DashboardPage() {
     redirect("/login")
   }
 
-  // Fetch real counts and data
-  const [exerciseCount, trainingCount, teamCount, myTeams, upcomingTrainings, recentActivity] = await Promise.all([
-    // Counts
+  // Fetch real counts and data with contextual breakdown
+  const [
+    myExerciseCount,
+    publicExerciseCount,
+    myTrainingCount,
+    teamTrainingCount,
+    myTeamCount,
+    totalUserCount,
+    myTeams,
+    upcomingTrainings,
+    recentActivity
+  ] = await Promise.all([
+    // Exercise stats
     prisma.exercise.count({
-      where: {
-        OR: [
-          { isPublic: true },
-          { creatorId: session.user.id }
-        ]
+      where: { creatorId: session.user.id }
+    }),
+    prisma.exercise.count({
+      where: { 
+        isPublic: true,
+        creatorId: { not: session.user.id }
       }
+    }),
+    // Training stats
+    prisma.workout.count({
+      where: { creatorId: session.user.id }
     }),
     prisma.workout.count({
       where: {
-        OR: [
-          { isPublic: true },
-          { creatorId: session.user.id }
+        AND: [
+          { creatorId: { not: session.user.id } },
+          {
+            OR: [
+              { isPublic: true },
+              {
+                team: {
+                  members: {
+                    some: {
+                      userId: session.user.id
+                    }
+                  }
+                }
+              }
+            ]
+          }
         ]
       }
     }),
+    // Team stats
     prisma.team.count({
       where: {
         members: {
@@ -38,6 +67,8 @@ export default async function DashboardPage() {
         }
       }
     }),
+    // Total community users
+    prisma.user.count(),
     // My teams
     prisma.team.findMany({
       where: {
@@ -227,15 +258,24 @@ export default async function DashboardPage() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Quick Stats */}
+        {/* Quick Stats - Contextual with Community */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          {/* Exercises */}
           <div className="bg-white rounded-xl shadow-sm border p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">🏐 Volleyball Exercises</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">{exerciseCount}</p>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-600">🏐 Exercises Available</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">
+                  {myExerciseCount + publicExerciseCount}
+                </p>
+                <p className="text-xs text-gray-500 mt-2">
+                  {myExerciseCount > 0 && <span className="text-blue-600 font-medium">{myExerciseCount} yours</span>}
+                  {myExerciseCount > 0 && publicExerciseCount > 0 && <span className="text-gray-400"> • </span>}
+                  {publicExerciseCount > 0 && <span>{publicExerciseCount} public</span>}
+                  {myExerciseCount === 0 && publicExerciseCount === 0 && <span>Get started by creating exercises</span>}
+                </p>
               </div>
-              <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
+              <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
                 <svg className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
@@ -243,13 +283,22 @@ export default async function DashboardPage() {
             </div>
           </div>
 
+          {/* Trainings */}
           <div className="bg-white rounded-xl shadow-sm border p-6">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex-1">
                 <p className="text-sm font-medium text-gray-600">📋 Training Plans</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">{trainingCount}</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">
+                  {myTrainingCount + teamTrainingCount}
+                </p>
+                <p className="text-xs text-gray-500 mt-2">
+                  {myTrainingCount > 0 && <span className="text-green-600 font-medium">{myTrainingCount} yours</span>}
+                  {myTrainingCount > 0 && teamTrainingCount > 0 && <span className="text-gray-400"> • </span>}
+                  {teamTrainingCount > 0 && <span>{teamTrainingCount} team</span>}
+                  {myTrainingCount === 0 && teamTrainingCount === 0 && <span>Create your first training</span>}
+                </p>
               </div>
-              <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
+              <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
                 <svg className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
@@ -257,13 +306,22 @@ export default async function DashboardPage() {
             </div>
           </div>
 
+          {/* Teams with Community Context */}
           <div className="bg-white rounded-xl shadow-sm border p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">👥 Teams</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">{teamCount}</p>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-600">👥 My Teams</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">
+                  {myTeamCount}
+                </p>
+                <p className="text-xs text-gray-500 mt-2">
+                  {totalUserCount > 1 && (
+                    <span>Join <span className="text-purple-600 font-medium">{totalUserCount}</span> coaches</span>
+                  )}
+                  {totalUserCount === 1 && <span>You're the first coach!</span>}
+                </p>
               </div>
-              <div className="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center">
+              <div className="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
                 <svg className="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>

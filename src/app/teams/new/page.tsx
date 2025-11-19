@@ -32,8 +32,10 @@ export default function NewTeamPage() {
         const data = await response.json()
         setSports(data)
         
-        // Auto-select volleyball if available
+        // Auto-select volleyball if available (prefer exact match "Volleyball" over "Beach Volleyball")
         const volleyball = data.find((s: Sport) => 
+          s.name.toLowerCase() === "volleyball"
+        ) || data.find((s: Sport) => 
           s.name.toLowerCase().includes("volleyball")
         )
         if (volleyball) {
