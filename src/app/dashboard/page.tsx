@@ -81,9 +81,10 @@ export default async function DashboardPage() {
             ]
           },
           {
-            startTime: {
-              gte: new Date()
-            }
+            OR: [
+              { startTime: null },
+              { startTime: { gte: new Date() } }
+            ]
           }
         ]
       },

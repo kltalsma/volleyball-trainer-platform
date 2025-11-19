@@ -14,6 +14,11 @@ interface Exercise {
   tags: string[]
   category: { id: string; name: string } | null
   creator: { id: string; name: string | null; email: string }
+  // Enhanced filtering fields
+  techniques?: string[]
+  playerMin?: number | null
+  playerMax?: number | null
+  skillLevel?: string | null
 }
 
 interface Category {
@@ -346,6 +351,38 @@ export default function ExercisesPage() {
                       <span className="text-blue-600">🌐 Public</span>
                     ) : (
                       <span className="text-gray-600">🔒 Private</span>
+                    )}
+                  </div>
+                  
+                  {/* Enhanced metadata: Techniques, Player Count, Skill Level */}
+                  <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                    {exercise.techniques && exercise.techniques.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {exercise.techniques.slice(0, 3).map((tech: string, idx: number) => (
+                          <span key={idx} className="bg-purple-50 text-purple-700 px-2 py-0.5 rounded-full font-medium">
+                            {tech.charAt(0).toUpperCase() + tech.slice(1)}
+                          </span>
+                        ))}
+                        {exercise.techniques.length > 3 && (
+                          <span className="text-gray-500">+{exercise.techniques.length - 3}</span>
+                        )}
+                      </div>
+                    )}
+                    
+                    {(exercise.playerMin || exercise.playerMax) && (
+                      <span className="bg-green-50 text-green-700 px-2 py-1 rounded font-medium">
+                        👥 {exercise.playerMin || '?'}-{exercise.playerMax || '?'} players
+                      </span>
+                    )}
+                    
+                    {exercise.skillLevel && (
+                      <span className={`px-2 py-1 rounded font-medium ${
+                        exercise.skillLevel === 'BEGINNER' ? 'bg-blue-50 text-blue-700' :
+                        exercise.skillLevel === 'INTERMEDIATE' ? 'bg-yellow-50 text-yellow-700' :
+                        'bg-red-50 text-red-700'
+                      }`}>
+                        {exercise.skillLevel.charAt(0) + exercise.skillLevel.slice(1).toLowerCase()}
+                      </span>
                     )}
                   </div>
                   

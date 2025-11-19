@@ -45,3 +45,8 @@ next-env.d.ts
 # Docker volumes
 postgres_data/
 redis_data/
+-e 
+# Test files
+test-*.js
+test-*.ts
+test-*.md
