@@ -195,7 +195,7 @@ export default function TrainingDetailPage({ params }: { params: Promise<{ id: s
             </div>
             <div className="flex items-center gap-2">
               <Link
-                href={`/trainings/${params.id}/edit`}
+                href={`/trainings/${unwrappedParams.id}/edit`}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
               >
                 Edit Training
@@ -286,7 +286,7 @@ export default function TrainingDetailPage({ params }: { params: Promise<{ id: s
             <div className="text-center py-12 text-gray-500">
               <p>No exercises added yet</p>
               <Link
-                href={`/trainings/${params.id}/edit`}
+                href={`/trainings/${unwrappedParams.id}/edit`}
                 className="mt-4 inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
               >
                 Add Exercises

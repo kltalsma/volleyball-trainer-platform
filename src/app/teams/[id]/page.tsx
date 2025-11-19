@@ -134,12 +134,20 @@ export default function TeamDetailPage() {
                 <p className="text-sm text-gray-500">{team.sport.name}</p>
               </div>
             </div>
-            <Link
-              href={`/trainings/new?teamId=${team.id}`}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
-            >
-              + Create Training
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link
+                href={`/teams/${params.id}/edit`}
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition"
+              >
+                Edit Team
+              </Link>
+              <Link
+                href={`/trainings/new?teamId=${team.id}`}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+              >
+                + Create Training
+              </Link>
+            </div>
           </div>
         </div>
       </header>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { use, useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 
@@ -17,7 +17,8 @@ interface Team {
   sport: Sport
 }
 
-export default function EditTeamPage({ params }: { params: { id: string } }) {
+export default function EditTeamPage({ params }: { params: Promise<{ id: string }> }) {
+  const unwrappedParams = use(params)
   const router = useRouter()
   const [sports, setSports] = useState<Sport[]>([])
   const [team, setTeam] = useState<Team | null>(null)
@@ -34,11 +35,11 @@ export default function EditTeamPage({ params }: { params: { id: string } }) {
   useEffect(() => {
     fetchTeam()
     fetchSports()
-  }, [params.id])
+  }, [unwrappedParams.id])
 
   async function fetchTeam() {
     try {
-      const response = await fetch(`/api/teams/${params.id}`)
+      const response = await fetch(`/api/teams/${unwrappedParams.id}`)
       if (response.ok) {
         const data = await response.json()
         setTeam(data)
@@ -82,7 +83,7 @@ export default function EditTeamPage({ params }: { params: { id: string } }) {
     setSaving(true)
 
     try {
-      const response = await fetch(`/api/teams/${params.id}`, {
+      const response = await fetch(`/api/teams/${unwrappedParams.id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -102,7 +103,7 @@ export default function EditTeamPage({ params }: { params: { id: string } }) {
         return
       }
 
-      router.push(`/teams/${params.id}`)
+      router.push(`/teams/${unwrappedParams.id}`)
       router.refresh()
     } catch (err) {
       console.error("Error updating team:", err)
@@ -147,7 +148,7 @@ export default function EditTeamPage({ params }: { params: { id: string } }) {
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center gap-4">
-            <Link href={`/teams/${params.id}`} className="text-gray-600 hover:text-gray-900">
+            <Link href={`/teams/${unwrappedParams.id}`} className="text-gray-600 hover:text-gray-900">
               ← Back to Team
             </Link>
             <h1 className="text-2xl font-bold text-gray-900">Edit Team</h1>
@@ -228,7 +229,7 @@ export default function EditTeamPage({ params }: { params: { id: string } }) {
               {saving ? "Saving..." : "Save Changes"}
             </button>
             <Link
-              href={`/teams/${params.id}`}
+              href={`/teams/${unwrappedParams.id}`}
               className="py-3 px-6 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-center"
             >
               Cancel

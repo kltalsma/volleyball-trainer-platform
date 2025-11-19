@@ -39,7 +39,8 @@ interface Training {
   exercises: WorkoutExercise[]
 }
 
-export default function EditTrainingPage({ params }: { params: { id: string } }) {
+export default function EditTrainingPage({ params }: { params: Promise<{ id: string }> }) {
+  const unwrappedParams = use(params)
   const router = useRouter()
   const [teams, setTeams] = useState<Team[]>([])
   const [availableExercises, setAvailableExercises] = useState<Exercise[]>([])
@@ -64,11 +65,11 @@ export default function EditTrainingPage({ params }: { params: { id: string } })
     fetchTraining()
     fetchTeams()
     fetchAvailableExercises()
-  }, [params.id])
+  }, [unwrappedParams.id])
 
   async function fetchTraining() {
     try {
-      const response = await fetch(`/api/workouts/${params.id}`)
+      const response = await fetch(`/api/workouts/${unwrappedParams.id}`)
       if (response.ok) {
         const data = await response.json()
         setTraining(data)
@@ -127,7 +128,7 @@ export default function EditTrainingPage({ params }: { params: { id: string } })
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          workoutId: params.id,
+          workoutId: unwrappedParams.id,
           exerciseId: exercise.id,
           order: workoutExercises.length + 1,
           duration: exercise.duration || 10,
@@ -257,7 +258,7 @@ export default function EditTrainingPage({ params }: { params: { id: string } })
     setSaving(true)
 
     try {
-      const response = await fetch(`/api/workouts/${params.id}`, {
+      const response = await fetch(`/api/workouts/${unwrappedParams.id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -281,7 +282,7 @@ export default function EditTrainingPage({ params }: { params: { id: string } })
         return
       }
 
-      router.push(`/trainings/${params.id}`)
+      router.push(`/trainings/${unwrappedParams.id}`)
       router.refresh()
     } catch (err) {
       console.error("Error updating training:", err)
@@ -326,7 +327,7 @@ export default function EditTrainingPage({ params }: { params: { id: string } })
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center gap-4">
-            <Link href={`/trainings/${params.id}`} className="text-gray-600 hover:text-gray-900">
+            <Link href={`/trainings/${unwrappedParams.id}`} className="text-gray-600 hover:text-gray-900">
               ← Back to Training
             </Link>
             <h1 className="text-2xl font-bold text-gray-900">Edit Training</h1>
@@ -682,7 +683,7 @@ export default function EditTrainingPage({ params }: { params: { id: string } })
               {saving ? "Saving..." : "Save Changes"}
             </button>
             <Link
-              href={`/trainings/${params.id}`}
+              href={`/trainings/${unwrappedParams.id}`}
               className="py-3 px-6 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-center"
             >
               Cancel
