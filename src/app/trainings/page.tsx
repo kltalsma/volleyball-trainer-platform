@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
+import EmptyState from "@/components/EmptyState"
 
 interface Training {
   id: string
@@ -188,14 +189,20 @@ export default function TrainingsPage() {
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
           </div>
         ) : trainings.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
-            <p className="text-gray-500 text-lg mb-4">No trainings found</p>
-            <Link
-              href="/trainings/new"
-              className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition"
-            >
-              Create your first training
-            </Link>
+          <div className="bg-white rounded-lg shadow-sm p-12">
+            <EmptyState
+              icon="🏐"
+              title={viewFilter === "public" ? "No public trainings found" : "No trainings found"}
+              description={
+                viewFilter === "public"
+                  ? "There are no public trainings available yet. Create your own and make it public to share with others!"
+                  : searchQuery
+                  ? "No trainings match your search criteria. Try adjusting your filters."
+                  : "Get started by creating your first training session. Add exercises, set duration, and schedule it for your team."
+              }
+              actionLabel={viewFilter === "public" ? "Create Public Training" : "Create Your First Training"}
+              actionHref="/trainings/new"
+            />
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

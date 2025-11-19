@@ -3,6 +3,7 @@
 import { use, useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import EmptyState from "@/components/EmptyState"
 
 interface Exercise {
   id: string
@@ -20,6 +21,8 @@ interface Exercise {
     diagram: string | null
     videoUrl: string | null
     tags: string[]
+    isPublic: boolean
+    creatorId: string
     category: {
       id: string
       name: string
@@ -283,21 +286,23 @@ export default function TrainingDetailPage({ params }: { params: Promise<{ id: s
           <h2 className="text-xl font-semibold text-gray-900 mb-6">Training Plan</h2>
           
           {exercises.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
-              <p>No exercises added yet</p>
-              <Link
-                href={`/trainings/${unwrappedParams.id}/edit`}
-                className="mt-4 inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-              >
-                Add Exercises
-              </Link>
-            </div>
+            <EmptyState
+              icon="🏐"
+              title="No exercises yet"
+              description="Start building your training plan by adding exercises. You can choose from your existing exercises or create new ones."
+              actionLabel="Add Exercises"
+              actionHref={`/trainings/${unwrappedParams.id}/edit`}
+            />
           ) : (
             <div className="space-y-4">
               {exercises.map((exercise, index) => (
                 <div
                   key={exercise.id}
-                  className="p-4 bg-gray-50 rounded-lg border hover:border-blue-300 hover:shadow-sm transition"
+                  className={`p-4 rounded-lg border transition ${
+                    exercise.exercise.isPublic 
+                      ? 'bg-gray-50 hover:border-blue-300 hover:shadow-sm' 
+                      : 'bg-gray-100 border-gray-300 opacity-60'
+                  }`}
                 >
                   <div className="flex items-start gap-4">
                     {/* Order number */}
@@ -309,12 +314,23 @@ export default function TrainingDetailPage({ params }: { params: Promise<{ id: s
                     <div className="flex-1">
                       <div className="flex items-start justify-between mb-2">
                         <div>
-                          <Link
-                            href={`/exercises/${exercise.exerciseId}`}
-                            className="text-lg font-semibold text-gray-900 hover:text-blue-600"
-                          >
-                            {exercise.exercise.title}
-                          </Link>
+                          {exercise.exercise.isPublic ? (
+                            <Link
+                              href={`/exercises/${exercise.exerciseId}`}
+                              className="text-lg font-semibold text-gray-900 hover:text-blue-600"
+                            >
+                              {exercise.exercise.title}
+                            </Link>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <span className="text-lg font-semibold text-gray-400">
+                                🔒 {exercise.exercise.title}
+                              </span>
+                              <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-xs rounded-full">
+                                Private
+                              </span>
+                            </div>
+                          )}
                           {exercise.exercise.category && (
                             <p className="text-sm text-gray-500 mt-1">
                               {exercise.exercise.category.name}

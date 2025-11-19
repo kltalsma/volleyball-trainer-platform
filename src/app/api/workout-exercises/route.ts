@@ -186,6 +186,8 @@ export async function GET(request: Request) {
             diagram: true,
             videoUrl: true,
             tags: true,
+            isPublic: true,
+            creatorId: true,
             category: {
               select: {
                 id: true,
@@ -200,7 +202,36 @@ export async function GET(request: Request) {
       }
     })
 
-    return NextResponse.json({ exercises: workoutExercises })
+    // Filter out private exercises that don't belong to the current user
+    // Replace them with a placeholder to maintain order
+    const filteredExercises = workoutExercises.map(we => {
+      const isOwner = we.exercise.creatorId === session.user.id
+      const isPublicExercise = we.exercise.isPublic
+      
+      // If exercise is private and user doesn't own it, hide the details
+      if (!isPublicExercise && !isOwner) {
+        return {
+          ...we,
+          exercise: {
+            id: we.exercise.id,
+            title: "[Private Exercise]",
+            description: "This exercise is private and cannot be viewed.",
+            difficulty: we.exercise.difficulty,
+            duration: we.exercise.duration,
+            diagram: null,
+            videoUrl: null,
+            tags: [],
+            isPublic: false,
+            creatorId: we.exercise.creatorId,
+            category: null
+          }
+        }
+      }
+      
+      return we
+    })
+
+    return NextResponse.json({ exercises: filteredExercises })
   } catch (error) {
     console.error("Error fetching workout exercises:", error)
     return NextResponse.json(
