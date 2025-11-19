@@ -118,17 +118,21 @@ export async function POST(request: Request) {
       )
     }
 
+    // Build data object, only include fields that have values
+    const data: any = {
+      title,
+      creatorId: session.user.id,
+      isPublic: isPublic || false
+    }
+
+    if (description) data.description = description
+    if (teamId) data.teamId = teamId
+    if (startTime) data.startTime = new Date(startTime)
+    if (endTime) data.endTime = new Date(endTime)
+    if (totalDuration) data.totalDuration = totalDuration
+
     const workout = await prisma.workout.create({
-      data: {
-        title,
-        description,
-        teamId,
-        creatorId: session.user.id,
-        isPublic: isPublic || false,
-        startTime: startTime ? new Date(startTime) : undefined,
-        endTime: endTime ? new Date(endTime) : undefined,
-        totalDuration
-      },
+      data,
       include: {
         creator: {
           select: {
@@ -154,8 +158,9 @@ export async function POST(request: Request) {
     return NextResponse.json(workout, { status: 201 })
   } catch (error) {
     console.error("Error creating workout:", error)
+    const errorMessage = error instanceof Error ? error.message : "Failed to create workout"
     return NextResponse.json(
-      { error: "Failed to create workout" },
+      { error: "Failed to create workout", details: errorMessage },
       { status: 500 }
     )
   }

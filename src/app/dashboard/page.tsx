@@ -10,8 +10,9 @@ export default async function DashboardPage() {
     redirect("/login")
   }
 
-  // Fetch real counts
-  const [exerciseCount, trainingCount, teamCount] = await Promise.all([
+  // Fetch real counts and data
+  const [exerciseCount, trainingCount, teamCount, myTeams, upcomingTrainings, recentActivity] = await Promise.all([
+    // Counts
     prisma.exercise.count({
       where: {
         OR: [
@@ -36,6 +37,117 @@ export default async function DashboardPage() {
           }
         }
       }
+    }),
+    // My teams
+    prisma.team.findMany({
+      where: {
+        members: {
+          some: {
+            userId: session.user.id
+          }
+        }
+      },
+      include: {
+        sport: true,
+        _count: {
+          select: {
+            members: true,
+            workouts: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      },
+      take: 5
+    }),
+    // Upcoming trainings (scheduled in the future)
+    prisma.workout.findMany({
+      where: {
+        AND: [
+          {
+            OR: [
+              { isPublic: true },
+              { creatorId: session.user.id },
+              {
+                team: {
+                  members: {
+                    some: {
+                      userId: session.user.id
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          {
+            startTime: {
+              gte: new Date()
+            }
+          }
+        ]
+      },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        },
+        team: {
+          select: {
+            id: true,
+            name: true
+          }
+        },
+        _count: {
+          select: {
+            exercises: true
+          }
+        }
+      },
+      orderBy: {
+        startTime: 'asc'
+      },
+      take: 5
+    }),
+    // Recent activity (last 10 workouts created)
+    prisma.workout.findMany({
+      where: {
+        OR: [
+          { isPublic: true },
+          { creatorId: session.user.id },
+          {
+            team: {
+              members: {
+                some: {
+                  userId: session.user.id
+                }
+              }
+            }
+          }
+        ]
+      },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        },
+        team: {
+          select: {
+            id: true,
+            name: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      },
+      take: 10
     })
   ])
 
@@ -53,21 +165,61 @@ export default async function DashboardPage() {
                 Welcome back, {session.user.name || session.user.email}!
               </p>
             </div>
-            <form
-              action={async () => {
-                "use server"
-                await signOut({ redirectTo: "/" })
-              }}
-            >
-              <button
-                type="submit"
+            <div className="flex items-center gap-3">
+              <a
+                href="/account"
                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               >
-                Sign out
-              </button>
-            </form>
+                ⚙️ Account
+              </a>
+              <form
+                action={async () => {
+                  "use server"
+                  await signOut({ redirectTo: "/" })
+                }}
+              >
+                <button
+                  type="submit"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Sign out
+                </button>
+              </form>
+            </div>
           </div>
         </div>
+
+        {/* Navigation Menu */}
+        <nav className="bg-gray-50 border-t">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex space-x-8 py-3">
+              <a
+                href="/dashboard"
+                className="px-3 py-2 text-sm font-medium text-blue-600 border-b-2 border-blue-600"
+              >
+                Dashboard
+              </a>
+              <a
+                href="/teams"
+                className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:border-b-2 hover:border-gray-300 transition-colors"
+              >
+                👥 Teams
+              </a>
+              <a
+                href="/trainings"
+                className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:border-b-2 hover:border-gray-300 transition-colors"
+              >
+                📋 Trainings
+              </a>
+              <a
+                href="/exercises"
+                className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:border-b-2 hover:border-gray-300 transition-colors"
+              >
+                🏐 Exercises
+              </a>
+            </div>
+          </div>
+        </nav>
       </header>
 
       {/* Main Content */}
@@ -142,16 +294,153 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* Recent Activity - Placeholder */}
-        <div className="bg-white rounded-xl shadow-sm border p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Recent Activity</h2>
-          <div className="text-center py-12">
-            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No activity yet</h3>
-            <p className="mt-1 text-sm text-gray-500">Get started by creating a team or adding exercises</p>
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* My Teams */}
+          <div className="bg-white rounded-xl shadow-sm border p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-gray-900">👥 My Teams</h2>
+              <a href="/teams" className="text-sm text-blue-600 hover:text-blue-700">View all →</a>
+            </div>
+            {myTeams.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-gray-500 text-sm">No teams yet</p>
+                <a href="/teams/new" className="text-blue-600 hover:text-blue-700 text-sm font-medium mt-2 inline-block">
+                  Create your first team
+                </a>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {myTeams.map((team) => (
+                  <a
+                    key={team.id}
+                    href={`/teams/${team.id}`}
+                    className="block p-4 rounded-lg border hover:border-blue-300 hover:shadow-sm transition-all"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-semibold text-gray-900">{team.name}</h3>
+                        {team.sport && (
+                          <p className="text-sm text-gray-600 mt-1">{team.sport.name}</p>
+                        )}
+                        <div className="flex gap-4 mt-2 text-xs text-gray-500">
+                          <span>{team._count.members} members</span>
+                          <span>{team._count.workouts} trainings</span>
+                        </div>
+                      </div>
+                      <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
+
+          {/* Upcoming Trainings */}
+          <div className="bg-white rounded-xl shadow-sm border p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-gray-900">📅 Upcoming Trainings</h2>
+              <a href="/trainings" className="text-sm text-blue-600 hover:text-blue-700">View all →</a>
+            </div>
+            {upcomingTrainings.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-gray-500 text-sm">No upcoming trainings scheduled</p>
+                <a href="/trainings/new" className="text-blue-600 hover:text-blue-700 text-sm font-medium mt-2 inline-block">
+                  Schedule a training
+                </a>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {upcomingTrainings.map((training) => (
+                  <a
+                    key={training.id}
+                    href={`/trainings/${training.id}`}
+                    className="block p-4 rounded-lg border hover:border-blue-300 hover:shadow-sm transition-all"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-gray-900">{training.title}</h3>
+                        {training.team && (
+                          <p className="text-sm text-gray-600 mt-1">Team: {training.team.name}</p>
+                        )}
+                        {training.startTime && (
+                          <p className="text-xs text-blue-600 mt-2">
+                            {new Date(training.startTime).toLocaleDateString('en-US', {
+                              weekday: 'short',
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </p>
+                        )}
+                        <p className="text-xs text-gray-500 mt-1">
+                          {training._count.exercises} exercises
+                          {training.totalDuration && ` • ${training.totalDuration} min`}
+                        </p>
+                      </div>
+                      <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Recent Activity */}
+        <div className="bg-white rounded-xl shadow-sm border p-6 mt-8">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">📊 Recent Activity</h2>
+          {recentActivity.length === 0 ? (
+            <div className="text-center py-12">
+              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <h3 className="mt-2 text-sm font-medium text-gray-900">No activity yet</h3>
+              <p className="mt-1 text-sm text-gray-500">Get started by creating a team or adding exercises</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {recentActivity.map((activity) => (
+                <div key={activity.id} className="flex items-start gap-4 pb-4 border-b last:border-b-0">
+                  <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                    <svg className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-900">
+                      <span className="font-medium">{activity.creator.name || activity.creator.email}</span>
+                      {' '}created training{' '}
+                      <a href={`/trainings/${activity.id}`} className="font-medium text-blue-600 hover:text-blue-700">
+                        {activity.title}
+                      </a>
+                      {activity.team && (
+                        <>
+                          {' '}for team{' '}
+                          <a href={`/teams/${activity.team.id}`} className="font-medium text-blue-600 hover:text-blue-700">
+                            {activity.team.name}
+                          </a>
+                        </>
+                      )}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {new Date(activity.createdAt).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </main>
     </div>

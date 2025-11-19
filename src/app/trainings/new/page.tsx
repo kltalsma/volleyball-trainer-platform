@@ -165,7 +165,9 @@ export default function NewTrainingPage() {
       const trainingData = await trainingResponse.json()
 
       if (!trainingResponse.ok) {
-        setError(trainingData.error || "Failed to create training")
+        console.error("Workout creation failed:", trainingData)
+        const errorMsg = trainingData.details ? `${trainingData.error}: ${trainingData.details}` : trainingData.error
+        setError(errorMsg || "Failed to create training")
         setLoading(false)
         return
       }
@@ -457,28 +459,30 @@ export default function NewTrainingPage() {
                 <p className="text-sm mt-2">Click "Add Exercise" to get started</p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {selectedExercises.map((selected, index) => (
-                  <div key={index} className="p-4 bg-gray-50 rounded-lg border">
+                  <div key={index} className="p-4 bg-white rounded-lg border-2 border-gray-200 hover:border-blue-300 transition-colors">
                     <div className="flex items-start gap-4">
                       {/* Order controls */}
-                      <div className="flex flex-col gap-1">
+                      <div className="flex flex-col gap-1 pt-1">
                         <button
                           type="button"
                           onClick={() => moveExercise(index, "up")}
                           disabled={index === 0}
                           className="p-1 text-gray-500 hover:text-gray-700 disabled:opacity-30"
+                          title="Move up"
                         >
                           ▲
                         </button>
-                        <span className="text-sm font-medium text-gray-600 text-center">
-                          {selected.order}
+                        <span className="text-sm font-bold text-blue-600 text-center px-2 py-1 bg-blue-50 rounded">
+                          #{selected.order}
                         </span>
                         <button
                           type="button"
                           onClick={() => moveExercise(index, "down")}
                           disabled={index === selectedExercises.length - 1}
                           className="p-1 text-gray-500 hover:text-gray-700 disabled:opacity-30"
+                          title="Move down"
                         >
                           ▼
                         </button>
@@ -486,46 +490,63 @@ export default function NewTrainingPage() {
 
                       {/* Exercise info */}
                       <div className="flex-1">
-                        <h4 className="font-medium text-gray-900 mb-2">
-                          {selected.exercise.title}
-                        </h4>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                        <div className="flex items-start justify-between mb-3">
                           <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1">
-                              Duration (minutes)
+                            <h4 className="font-semibold text-gray-900 text-lg mb-1">
+                              {selected.exercise.title}
+                            </h4>
+                            <div className="flex items-center gap-2">
+                              {selected.exercise.category && (
+                                <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded">
+                                  {selected.exercise.category.name}
+                                </span>
+                              )}
+                              <span className={`text-xs px-2 py-1 rounded ${
+                                selected.exercise.difficulty === 'EASY' ? 'bg-green-100 text-green-700' :
+                                selected.exercise.difficulty === 'MEDIUM' ? 'bg-yellow-100 text-yellow-700' :
+                                'bg-red-100 text-red-700'
+                              }`}>
+                                {selected.exercise.difficulty}
+                              </span>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeExercise(index)}
+                            className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Remove exercise"
+                          >
+                            <span className="text-xl">×</span>
+                          </button>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              ⏱️ Duration (minutes)
                             </label>
                             <input
                               type="number"
                               min="1"
                               value={selected.duration}
-                              onChange={(e) => updateExerciseDuration(index, parseInt(e.target.value))}
-                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              onChange={(e) => updateExerciseDuration(index, parseInt(e.target.value) || 1)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                           </div>
                           <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1">
-                              Notes
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              📝 Notes (optional)
                             </label>
                             <input
                               type="text"
                               value={selected.notes}
                               onChange={(e) => updateExerciseNotes(index, e.target.value)}
-                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              placeholder="Special instructions..."
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              placeholder="e.g., Focus on technique"
                             />
                           </div>
                         </div>
                       </div>
-
-                      {/* Remove button */}
-                      <button
-                        type="button"
-                        onClick={() => removeExercise(index)}
-                        className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded"
-                      >
-                        ✕
-                      </button>
                     </div>
                   </div>
                 ))}

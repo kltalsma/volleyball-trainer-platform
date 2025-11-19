@@ -102,37 +102,12 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Status Section */}
-        <div className="max-w-2xl mx-auto mt-20 bg-blue-50 border border-blue-200 rounded-xl p-8">
-          <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">
-            🚀 Development Status
-          </h3>
-          <div className="space-y-3">
-            <div className="flex items-center gap-3">
-              <span className="text-green-600 font-semibold">✓</span>
-              <span className="text-gray-700">Database architecture complete</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="text-green-600 font-semibold">✓</span>
-              <span className="text-gray-700">Docker infrastructure ready</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="text-green-600 font-semibold">✓</span>
-              <span className="text-gray-700">Authentication system complete</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="text-gray-400 font-semibold">○</span>
-              <span className="text-gray-500">Exercise management in progress</span>
-            </div>
-          </div>
-        </div>
       </main>
 
       {/* Footer */}
       <footer className="border-t bg-white/80 backdrop-blur-sm mt-20">
         <div className="container mx-auto px-4 py-8 text-center text-gray-600">
-          <p>Built with Next.js, React, TypeScript, Tailwind CSS, PostgreSQL, and Redis</p>
-          <p className="mt-2 text-sm">A modern alternative to YourSportPlanner</p>
+          <p>Built with Next.js, React, TypeScript, Tailwind CSS, and PostgreSQL</p>
         </div>
       </footer>
     </div>

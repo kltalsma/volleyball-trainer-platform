@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { use, useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 
@@ -51,10 +51,11 @@ interface Training {
   }
 }
 
-export default function TrainingDetailPage({ params }: { params: { id: string } }) {
+export default function TrainingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
+  const unwrappedParams = use(params)
   const [training, setTraining] = useState<Training | null>(null)
-  const [exercises, setExercises] = useState<Exercise[]>([])
+  const [exercises, setExercises] = useState<WorkoutExercise[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [deleting, setDeleting] = useState(false)
@@ -62,11 +63,11 @@ export default function TrainingDetailPage({ params }: { params: { id: string } 
   useEffect(() => {
     fetchTraining()
     fetchExercises()
-  }, [params.id])
+  }, [unwrappedParams.id])
 
   async function fetchTraining() {
     try {
-      const response = await fetch(`/api/workouts/${params.id}`)
+      const response = await fetch(`/api/workouts/${unwrappedParams.id}`)
       if (response.ok) {
         const data = await response.json()
         setTraining(data)
@@ -83,7 +84,7 @@ export default function TrainingDetailPage({ params }: { params: { id: string } 
 
   async function fetchExercises() {
     try {
-      const response = await fetch(`/api/workout-exercises?workoutId=${params.id}`)
+      const response = await fetch(`/api/workout-exercises?workoutId=${unwrappedParams.id}`)
       if (response.ok) {
         const data = await response.json()
         setExercises(data.exercises || [])
@@ -94,13 +95,14 @@ export default function TrainingDetailPage({ params }: { params: { id: string } 
   }
 
   async function handleDelete() {
-    if (!confirm("Are you sure you want to delete this training? This action cannot be undone.")) {
+    if (!confirm("Are you sure you want to delete this training?")) {
       return
     }
 
     setDeleting(true)
+
     try {
-      const response = await fetch(`/api/workouts/${params.id}`, {
+      const response = await fetch(`/api/workouts/${unwrappedParams.id}`, {
         method: "DELETE"
       })
 
