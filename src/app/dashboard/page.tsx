@@ -80,6 +80,24 @@ export default async function DashboardPage() {
       },
       include: {
         sport: true,
+        members: {
+          where: {
+            role: 'COACH'
+          },
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true
+              }
+            }
+          },
+          orderBy: {
+            joinedAt: 'asc'
+          },
+          take: 1
+        },
         _count: {
           select: {
             members: true,
@@ -445,29 +463,41 @@ export default async function DashboardPage() {
               </div>
             ) : (
               <div className="space-y-3">
-                {myTeams.map((team) => (
-                  <a
-                    key={team.id}
-                    href={`/teams/${team.id}`}
-                    className="block p-4 rounded-lg border hover:border-blue-300 hover:shadow-sm transition-all"
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-semibold text-gray-900">{team.name}</h3>
-                        {team.sport && (
-                          <p className="text-sm text-gray-600 mt-1">{team.sport.name}</p>
-                        )}
-                        <div className="flex gap-4 mt-2 text-xs text-gray-500">
-                          <span>{team._count.members} members</span>
-                          <span>{team._count.workouts} trainings</span>
+                {myTeams.map((team) => {
+                  const owner = team.members?.[0]?.user
+                  const isOwner = owner?.id === session.user.id
+                  return (
+                    <a
+                      key={team.id}
+                      href={`/teams/${team.id}`}
+                      className="block p-4 rounded-lg border hover:border-blue-300 hover:shadow-sm transition-all"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-gray-900">{team.name}</h3>
+                          {team.sport && (
+                            <p className="text-sm text-gray-600 mt-1">{team.sport.name}</p>
+                          )}
+                          <div className="flex gap-4 mt-2 text-xs text-gray-500">
+                            <span>👥 {team._count.members} members</span>
+                            <span>📋 {team._count.workouts} trainings</span>
+                          </div>
+                          {owner && (
+                            <p className="text-xs text-gray-500 mt-1">
+                              <span className="text-gray-400">Coach:</span>{' '}
+                              <span className={isOwner ? "text-blue-600 font-medium" : ""}>
+                                {isOwner ? "You" : (owner.name || owner.email)}
+                              </span>
+                            </p>
+                          )}
                         </div>
+                        <svg className="h-5 w-5 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
                       </div>
-                      <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </div>
-                  </a>
-                ))}
+                    </a>
+                  )
+                })}
               </div>
             )}
           </div>

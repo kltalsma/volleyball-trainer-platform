@@ -27,6 +27,24 @@ export async function GET(request: Request) {
       where,
       include: {
         sport: true,
+        members: {
+          where: {
+            role: 'COACH'
+          },
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true
+              }
+            }
+          },
+          orderBy: {
+            joinedAt: 'asc'
+          },
+          take: 1
+        },
         _count: {
           select: {
             members: true,

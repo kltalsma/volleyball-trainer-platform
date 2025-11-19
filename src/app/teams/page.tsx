@@ -12,6 +12,13 @@ interface Team {
     id: string
     name: string
   }
+  members: Array<{
+    user: {
+      id: string
+      name: string | null
+      email: string
+    }
+  }>
   _count: {
     members: number
     workouts: number
@@ -132,11 +139,17 @@ export default function TeamsPage() {
                 )}
 
                 {/* Stats */}
-                <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                  <div className="flex items-center gap-4 text-sm text-gray-500">
+                <div className="pt-4 border-t border-gray-100">
+                  <div className="flex items-center gap-4 text-sm text-gray-500 mb-2">
                     <span>👥 {team._count.members} members</span>
                     <span>📋 {team._count.workouts} trainings</span>
                   </div>
+                  {team.members?.[0] && (
+                    <p className="text-xs text-gray-500">
+                      <span className="text-gray-400">Coach:</span>{' '}
+                      {team.members[0].user.name || team.members[0].user.email}
+                    </p>
+                  )}
                 </div>
               </Link>
             ))}
