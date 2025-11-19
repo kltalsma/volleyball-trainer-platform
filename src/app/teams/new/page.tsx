@@ -77,7 +77,8 @@ export default function NewTeamPage() {
         return
       }
 
-      router.push(`/teams/${data.id}`)
+      // Redirect to edit page to add members
+      router.push(`/teams/${data.id}/edit?new=true`)
       router.refresh()
     } catch (err) {
       console.error("Error creating team:", err)
@@ -125,25 +126,19 @@ export default function NewTeamPage() {
             />
           </div>
 
-          {/* Sport */}
+          {/* Sport - Read-only (volleyball only) */}
           <div>
             <label htmlFor="sport" className="block text-sm font-medium text-gray-700 mb-2">
-              Sport *
+              Sport
             </label>
-            <select
+            <input
               id="sport"
-              required
-              value={formData.sportId}
-              onChange={(e) => setFormData({ ...formData, sportId: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Select a sport</option>
-              {sports.map((sport) => (
-                <option key={sport.id} value={sport.id}>
-                  {sport.name}
-                </option>
-              ))}
-            </select>
+              type="text"
+              value={sports.find(s => s.id === formData.sportId)?.name || "Volleyball"}
+              readOnly
+              disabled
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed"
+            />
           </div>
 
           {/* Description */}
@@ -159,6 +154,13 @@ export default function NewTeamPage() {
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Team description, level, goals, etc."
             />
+          </div>
+
+          {/* Info message */}
+          <div className="rounded-lg bg-blue-50 p-4 border border-blue-200">
+            <p className="text-sm text-blue-800">
+              💡 After creating your team, you'll be able to add players, coaches, and other members.
+            </p>
           </div>
 
           {/* Submit buttons */}

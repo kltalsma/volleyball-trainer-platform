@@ -61,6 +61,17 @@ export default function EditTeamPage({ params }: { params: Promise<{ id: string 
     fetchTeam()
     fetchSports()
     fetchMembers()
+    
+    // Check if this is a new team (redirected from creation)
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search)
+      if (urlParams.get('new') === 'true') {
+        setSuccess("Team created successfully! Now add your team members below.")
+        setShowAddMember(true)
+        // Remove the query param
+        window.history.replaceState({}, '', `/teams/${unwrappedParams.id}/edit`)
+      }
+    }
   }, [unwrappedParams.id])
 
   async function fetchTeam() {
@@ -351,25 +362,19 @@ export default function EditTeamPage({ params }: { params: Promise<{ id: string 
               />
             </div>
 
-            {/* Sport Selection */}
+            {/* Sport - Read-only (volleyball only) */}
             <div>
               <label htmlFor="sport" className="block text-sm font-medium text-gray-700 mb-2">
-                Sport *
+                Sport
               </label>
-              <select
+              <input
                 id="sport"
-                required
-                value={formData.sportId}
-                onChange={(e) => setFormData({ ...formData, sportId: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Select a sport</option>
-                {sports.map((sport) => (
-                  <option key={sport.id} value={sport.id}>
-                    {sport.name}
-                  </option>
-                ))}
-              </select>
+                type="text"
+                value={sports.find(s => s.id === formData.sportId)?.name || team?.sport?.name || "Volleyball"}
+                readOnly
+                disabled
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed"
+              />
             </div>
 
             {/* Submit button */}

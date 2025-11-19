@@ -10,7 +10,13 @@ export async function GET() {
     }
 
     const sports = await prisma.sport.findMany({
-      where: { active: true },
+      where: { 
+        active: true,
+        name: {
+          contains: "volleyball",
+          mode: "insensitive"
+        }
+      },
       orderBy: { name: "asc" }
     })
 
