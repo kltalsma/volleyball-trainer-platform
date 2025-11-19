@@ -261,9 +261,18 @@ export default function NewTrainingPage() {
                 type="text"
                 required
                 value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onChange={(e) => {
+                  console.log("Title input changed:", e.target.value)
+                  setFormData({ ...formData, title: e.target.value })
+                }}
+                onFocus={() => console.log("Title input focused")}
+                onKeyDown={(e) => console.log("Key pressed:", e.key)}
+                readOnly={false}
+                disabled={false}
+                autoComplete="off"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                 placeholder="e.g., Advanced Serving Practice"
+                style={{ pointerEvents: 'auto', userSelect: 'text' }}
               />
             </div>
 
@@ -276,9 +285,17 @@ export default function NewTrainingPage() {
                 id="description"
                 rows={3}
                 value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onChange={(e) => {
+                  console.log("Description changed:", e.target.value)
+                  setFormData({ ...formData, description: e.target.value })
+                }}
+                onFocus={() => console.log("Description focused")}
+                readOnly={false}
+                disabled={false}
+                autoComplete="off"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                 placeholder="Training goals and focus areas..."
+                style={{ pointerEvents: 'auto', userSelect: 'text' }}
               />
             </div>
 
@@ -322,33 +339,43 @@ export default function NewTrainingPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label htmlFor="startTime" className="block text-sm font-medium text-gray-700 mb-2">
-                  Start Time
+                  📅 Start Date & Time
                 </label>
                 <input
                   id="startTime"
                   type="datetime-local"
                   value={formData.startTime}
-                  onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  onChange={(e) => {
+                    console.log("Start time changed:", e.target.value)
+                    setFormData({ ...formData, startTime: e.target.value })
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white cursor-pointer"
+                  step="300"
                 />
+                <p className="text-xs text-gray-500 mt-1">Click to select date and time</p>
               </div>
 
               <div>
                 <label htmlFor="endTime" className="block text-sm font-medium text-gray-700 mb-2">
-                  End Time
+                  📅 End Date & Time
                 </label>
                 <input
                   id="endTime"
                   type="datetime-local"
                   value={formData.endTime}
-                  onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  onChange={(e) => {
+                    console.log("End time changed:", e.target.value)
+                    setFormData({ ...formData, endTime: e.target.value })
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white cursor-pointer"
+                  step="300"
                 />
+                <p className="text-xs text-gray-500 mt-1">Click to select date and time</p>
               </div>
 
               <div>
                 <label htmlFor="totalDuration" className="block text-sm font-medium text-gray-700 mb-2">
-                  Total Duration (min)
+                  ⏱️ Total Duration (min)
                 </label>
                 <input
                   id="totalDuration"
@@ -359,6 +386,7 @@ export default function NewTrainingPage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="90"
                 />
+                <p className="text-xs text-gray-500 mt-1">Optional: Total training length</p>
               </div>
             </div>
 
