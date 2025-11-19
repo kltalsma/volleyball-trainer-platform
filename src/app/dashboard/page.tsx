@@ -337,6 +337,12 @@ export default async function DashboardPage() {
                 📋 Trainings
               </a>
               <a
+                href="/sessions"
+                className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:border-b-2 hover:border-gray-300 transition-colors"
+              >
+                📅 Sessions
+              </a>
+              <a
                 href="/exercises"
                 className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:border-b-2 hover:border-gray-300 transition-colors"
               >
