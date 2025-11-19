@@ -13,15 +13,25 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const teamId = searchParams.get("teamId")
     const myWorkouts = searchParams.get("myWorkouts") === "true"
+    const publicOnly = searchParams.get("publicOnly") === "true"
     const search = searchParams.get("search")
     const page = parseInt(searchParams.get("page") || "1")
     const limit = parseInt(searchParams.get("limit") || "20")
     const skip = (page - 1) * limit
 
+    // Default: show only user's own workouts and team workouts
     const where: any = {
       OR: [
-        { isPublic: true },
-        { creatorId: session.user.id }
+        { creatorId: session.user.id },
+        {
+          team: {
+            members: {
+              some: {
+                userId: session.user.id
+              }
+            }
+          }
+        }
       ]
     }
 
@@ -30,15 +40,34 @@ export async function GET(request: Request) {
       delete where.OR
     }
 
+    // Show only public workouts when explicitly requested
+    if (publicOnly) {
+      where.isPublic = true
+      delete where.OR
+    }
+
     if (teamId) {
       where.teamId = teamId
     }
 
     if (search) {
-      where.OR = [
-        { title: { contains: search, mode: "insensitive" } },
-        { description: { contains: search, mode: "insensitive" } }
-      ]
+      // Store existing OR conditions if any
+      const existingOr = where.OR
+      where.AND = where.AND || []
+      
+      // Add search condition as AND with existing filters
+      where.AND.push({
+        OR: [
+          { title: { contains: search, mode: "insensitive" } },
+          { description: { contains: search, mode: "insensitive" } }
+        ]
+      })
+      
+      // If we had OR conditions, add them to AND as well
+      if (existingOr) {
+        where.AND.push({ OR: existingOr })
+        delete where.OR
+      }
     }
 
     const [workouts, total] = await Promise.all([

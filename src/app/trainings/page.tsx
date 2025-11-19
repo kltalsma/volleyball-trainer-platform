@@ -71,19 +71,13 @@ export default function TrainingsPage() {
       
       if (teamFilter) params.append("teamId", teamFilter)
       if (viewFilter === "my") params.append("myWorkouts", "true")
+      if (viewFilter === "public") params.append("publicOnly", "true")
       if (searchQuery) params.append("search", searchQuery)
       
       const response = await fetch(`/api/workouts?${params.toString()}`)
       if (response.ok) {
         const data = await response.json()
-        let filteredTrainings = data.workouts
-        
-        // Client-side filter for public-only view
-        if (viewFilter === "public") {
-          filteredTrainings = filteredTrainings.filter((t: Training) => t.isPublic)
-        }
-        
-        setTrainings(filteredTrainings)
+        setTrainings(data.workouts)
       }
     } catch (error) {
       console.error("Error fetching trainings:", error)
@@ -173,9 +167,9 @@ export default function TrainingsPage() {
                 onChange={(e) => setViewFilter(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                <option value="all">All Trainings</option>
-                <option value="my">My Trainings</option>
-                <option value="public">Public Only</option>
+                <option value="all">My Trainings & Team Trainings</option>
+                <option value="my">My Trainings Only</option>
+                <option value="public">Browse Public Library</option>
               </select>
             </div>
 

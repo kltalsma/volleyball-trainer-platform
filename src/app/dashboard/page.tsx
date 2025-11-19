@@ -67,7 +67,6 @@ export default async function DashboardPage() {
         AND: [
           {
             OR: [
-              { isPublic: true },
               { creatorId: session.user.id },
               {
                 team: {
@@ -117,11 +116,10 @@ export default async function DashboardPage() {
       },
       take: 5
     }),
-    // Recent activity (last 10 workouts created)
+    // Recent activity (your workouts and team workouts)
     prisma.workout.findMany({
       where: {
         OR: [
-          { isPublic: true },
           { creatorId: session.user.id },
           {
             team: {
