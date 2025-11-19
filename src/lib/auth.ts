@@ -41,6 +41,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           email: user.email,
           name: user.name,
           role: user.role,
+          theme: user.theme || 'default',
         }
       }
     })
@@ -54,17 +55,26 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     error: "/login",
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
+      // Initial sign in - populate token from user object
       if (user) {
         token.id = user.id
         token.role = user.role
+        token.theme = user.theme || 'default'
       }
+      
+      // Handle session updates (e.g., theme changes via update())
+      if (trigger === 'update' && session?.theme) {
+        token.theme = session.theme
+      }
+      
       return token
     },
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string
         session.user.role = token.role as string
+        session.user.theme = token.theme as string || 'default'
       }
       return session
     }

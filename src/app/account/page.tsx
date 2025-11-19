@@ -4,6 +4,8 @@ import { useState, useEffect } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { useTheme } from "@/components/theme-provider"
+import { getAvailableThemes } from "@/lib/themes"
 
 interface User {
   id: string
@@ -13,7 +15,7 @@ interface User {
 }
 
 export default function AccountPage() {
-  const { data: session, status } = useSession()
+  const { data: session, status, update } = useSession()
   const router = useRouter()
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
@@ -32,7 +34,8 @@ export default function AccountPage() {
     confirmPassword: ""
   })
 
-  const [theme, setTheme] = useState<"light" | "dark" | "system">("system")
+  const { theme: currentTheme, setTheme: setAppTheme } = useTheme()
+  const availableThemes = getAvailableThemes()
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -42,13 +45,7 @@ export default function AccountPage() {
     }
   }, [status])
 
-  useEffect(() => {
-    // Load theme preference from localStorage
-    const savedTheme = localStorage.getItem("theme") as "light" | "dark" | "system" | null
-    if (savedTheme) {
-      setTheme(savedTheme)
-    }
-  }, [])
+
 
   async function fetchUserProfile() {
     try {
@@ -159,26 +156,19 @@ export default function AccountPage() {
     }
   }
 
-  const handleThemeChange = (newTheme: "light" | "dark" | "system") => {
-    setTheme(newTheme)
-    localStorage.setItem("theme", newTheme)
-    
-    // Apply theme
-    if (newTheme === "dark") {
-      document.documentElement.classList.add("dark")
-    } else if (newTheme === "light") {
-      document.documentElement.classList.remove("dark")
-    } else {
-      // System preference
-      if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-        document.documentElement.classList.add("dark")
-      } else {
-        document.documentElement.classList.remove("dark")
-      }
+  const handleThemeChange = async (themeId: string) => {
+    try {
+      // Update theme (saves to DB and applies immediately)
+      await setAppTheme(themeId)
+      
+      // Show success message
+      setSuccess("Theme updated successfully")
+      setTimeout(() => setSuccess(""), 2000)
+    } catch (error) {
+      console.error("Failed to update theme:", error)
+      setError("Failed to update theme")
+      setTimeout(() => setError(""), 3000)
     }
-    
-    setSuccess("Theme preference saved")
-    setTimeout(() => setSuccess(""), 2000)
   }
 
   if (loading || status === "loading") {
@@ -285,56 +275,53 @@ export default function AccountPage() {
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">
-                Theme Preference
+                Theme
               </label>
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => handleThemeChange("light")}
-                  className={`flex-1 px-4 py-3 rounded-lg border-2 transition-all ${
-                    theme === "light"
-                      ? "border-blue-600 bg-blue-50 text-blue-700"
-                      : "border-gray-200 hover:border-gray-300"
-                  }`}
-                >
-                  <div className="text-center">
-                    <div className="text-2xl mb-1">☀️</div>
-                    <div className="font-medium">Light</div>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleThemeChange("dark")}
-                  className={`flex-1 px-4 py-3 rounded-lg border-2 transition-all ${
-                    theme === "dark"
-                      ? "border-blue-600 bg-blue-50 text-blue-700"
-                      : "border-gray-200 hover:border-gray-300"
-                  }`}
-                >
-                  <div className="text-center">
-                    <div className="text-2xl mb-1">🌙</div>
-                    <div className="font-medium">Dark</div>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleThemeChange("system")}
-                  className={`flex-1 px-4 py-3 rounded-lg border-2 transition-all ${
-                    theme === "system"
-                      ? "border-blue-600 bg-blue-50 text-blue-700"
-                      : "border-gray-200 hover:border-gray-300"
-                  }`}
-                >
-                  <div className="text-center">
-                    <div className="text-2xl mb-1">💻</div>
-                    <div className="font-medium">System</div>
-                  </div>
-                </button>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {availableThemes.map((theme) => (
+                  <button
+                    key={theme.id}
+                    type="button"
+                    onClick={() => handleThemeChange(theme.id)}
+                    className={`relative p-4 rounded-lg border-2 transition-all text-left ${
+                      currentTheme.id === theme.id
+                        ? "border-blue-600 bg-blue-50"
+                        : "border-gray-200 hover:border-gray-300"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <h3 className="font-semibold text-gray-900">{theme.name}</h3>
+                        <p className="text-xs text-gray-600 mt-1">{theme.description}</p>
+                      </div>
+                      {currentTheme.id === theme.id && (
+                        <span className="text-blue-600 text-xl">✓</span>
+                      )}
+                    </div>
+                    
+                    {/* Color Preview */}
+                    <div className="flex gap-2 flex-wrap">
+                      <div 
+                        className="w-8 h-8 rounded border border-gray-200" 
+                        style={{ backgroundColor: theme.colors.primary }}
+                        title="Primary"
+                      />
+                      <div 
+                        className="w-8 h-8 rounded border border-gray-200" 
+                        style={{ backgroundColor: theme.colors.secondary }}
+                        title="Secondary"
+                      />
+                      <div 
+                        className="w-8 h-8 rounded border border-gray-200" 
+                        style={{ backgroundColor: theme.colors.accent }}
+                        title="Accent"
+                      />
+                    </div>
+                  </button>
+                ))}
               </div>
-              <p className="text-xs text-gray-500 mt-2">
-                Choose your preferred color scheme
+              <p className="text-xs text-gray-500 mt-3">
+                Choose a theme that matches your organization or personal preference
               </p>
             </div>
           </div>

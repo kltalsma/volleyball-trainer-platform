@@ -147,41 +147,114 @@ export default async function DashboardPage() {
       },
       take: 5
     }),
-    // Recent activity (your workouts and team workouts)
-    prisma.workout.findMany({
-      where: {
-        OR: [
-          { creatorId: session.user.id },
-          {
-            team: {
-              members: {
-                some: {
-                  userId: session.user.id
+    // Get recent activity from multiple sources
+    Promise.all([
+      // Recent workouts
+      prisma.workout.findMany({
+        where: {
+          OR: [
+            { creatorId: session.user.id },
+            {
+              team: {
+                members: {
+                  some: {
+                    userId: session.user.id
+                  }
                 }
               }
             }
-          }
-        ]
-      },
-      include: {
-        creator: {
-          select: {
-            id: true,
-            name: true,
-            email: true
+          ]
+        },
+        include: {
+          creator: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
+          },
+          team: {
+            select: {
+              id: true,
+              name: true
+            }
           }
         },
-        team: {
-          select: {
-            id: true,
-            name: true
+        orderBy: {
+          createdAt: 'desc'
+        },
+        take: 5
+      }),
+      // Recent exercises
+      prisma.exercise.findMany({
+        where: {
+          OR: [
+            { creatorId: session.user.id },
+            { isPublic: true }
+          ]
+        },
+        include: {
+          creator: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
           }
-        }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      },
-      take: 10
+        },
+        orderBy: {
+          createdAt: 'desc'
+        },
+        take: 5
+      }),
+      // Recent teams
+      prisma.team.findMany({
+        where: {
+          members: {
+            some: {
+              userId: session.user.id
+            }
+          }
+        },
+        include: {
+          sport: true,
+          members: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true
+                }
+              }
+            },
+            orderBy: {
+              joinedAt: 'desc'
+            },
+            take: 1
+          }
+        },
+        orderBy: {
+          createdAt: 'desc'
+        },
+        take: 5
+      })
+    ]).then(([workouts, exercises, teams]) => {
+      // Combine and sort all activities
+      const activities: Array<{
+        id: string
+        type: 'workout' | 'exercise' | 'team'
+        createdAt: Date
+        data: any
+      }> = [
+        ...workouts.map(w => ({ id: w.id, type: 'workout' as const, createdAt: w.createdAt, data: w })),
+        ...exercises.map(e => ({ id: e.id, type: 'exercise' as const, createdAt: e.createdAt, data: e })),
+        ...teams.map(t => ({ id: t.id, type: 'team' as const, createdAt: t.createdAt, data: t }))
+      ]
+      
+      return activities
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+        .slice(0, 10)
     })
   ])
 
@@ -466,40 +539,111 @@ export default async function DashboardPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {recentActivity.map((activity) => (
-                <div key={activity.id} className="flex items-start gap-4 pb-4 border-b last:border-b-0">
-                  <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                    <svg className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-900">
-                      <span className="font-medium">{activity.creator.name || activity.creator.email}</span>
-                      {' '}created training{' '}
-                      <a href={`/trainings/${activity.id}`} className="font-medium text-blue-600 hover:text-blue-700">
-                        {activity.title}
-                      </a>
-                      {activity.team && (
-                        <>
-                          {' '}for team{' '}
-                          <a href={`/teams/${activity.team.id}`} className="font-medium text-blue-600 hover:text-blue-700">
-                            {activity.team.name}
+              {recentActivity.map((activity) => {
+                const activityKey = `${activity.type}-${activity.id}`
+                
+                if (activity.type === 'workout') {
+                  const workout = activity.data
+                  return (
+                    <div key={activityKey} className="flex items-start gap-4 pb-4 border-b last:border-b-0">
+                      <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <svg className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-gray-900">
+                          <span className="font-medium">{workout.creator.name || workout.creator.email}</span>
+                          {' '}created training{' '}
+                          <a href={`/trainings/${workout.id}`} className="font-medium text-blue-600 hover:text-blue-700">
+                            {workout.title}
                           </a>
-                        </>
-                      )}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {new Date(activity.createdAt).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                          {workout.team && (
+                            <>
+                              {' '}for team{' '}
+                              <a href={`/teams/${workout.team.id}`} className="font-medium text-blue-600 hover:text-blue-700">
+                                {workout.team.name}
+                              </a>
+                            </>
+                          )}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {new Date(activity.createdAt).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  )
+                } else if (activity.type === 'exercise') {
+                  const exercise = activity.data
+                  return (
+                    <div key={activityKey} className="flex items-start gap-4 pb-4 border-b last:border-b-0">
+                      <div className="flex-shrink-0 w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                        <svg className="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-gray-900">
+                          <span className="font-medium">{exercise.creator.name || exercise.creator.email}</span>
+                          {' '}created exercise{' '}
+                          <a href={`/exercises/${exercise.id}`} className="font-medium text-blue-600 hover:text-blue-700">
+                            {exercise.title}
+                          </a>
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {new Date(activity.createdAt).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  )
+                } else if (activity.type === 'team') {
+                  const team = activity.data
+                  const latestMember = team.members?.[0]
+                  return (
+                    <div key={activityKey} className="flex items-start gap-4 pb-4 border-b last:border-b-0">
+                      <div className="flex-shrink-0 w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                        <svg className="h-5 w-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-gray-900">
+                          {latestMember ? (
+                            <>
+                              <span className="font-medium">{latestMember.user.name || latestMember.user.email}</span>
+                              {' '}joined team{' '}
+                            </>
+                          ) : (
+                            <>New team created: </>
+                          )}
+                          <a href={`/teams/${team.id}`} className="font-medium text-blue-600 hover:text-blue-700">
+                            {team.name}
+                          </a>
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {new Date(latestMember?.joinedAt || activity.createdAt).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  )
+                }
+                return null
+              })}
             </div>
           )}
         </div>

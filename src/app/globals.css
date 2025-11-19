@@ -1,22 +1,30 @@
 @import "tailwindcss";
 
 :root {
+  /* Theme colors mapped to Tailwind's blue scale - overridden by ThemeProvider */
+  --blue-50: #eff6ff;
+  --blue-100: #dbeafe;
+  --blue-600: #2563eb;
+  --blue-700: #1d4ed8;
+  --blue-800: #1e40af;
+  
+  /* Legacy variables */
   --background: #ffffff;
   --foreground: #171717;
 }
 
 @theme inline {
+  /* Map Tailwind blue scale to CSS variables */
+  --color-blue-50: var(--blue-50);
+  --color-blue-100: var(--blue-100);
+  --color-blue-600: var(--blue-600);
+  --color-blue-700: var(--blue-700);
+  --color-blue-800: var(--blue-800);
+  
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {

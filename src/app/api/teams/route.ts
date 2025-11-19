@@ -58,7 +58,15 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { name, description, sportId } = body
+    const { 
+      name, 
+      description, 
+      sportId,
+      volleybalNlApiId,
+      volleybalNlClubId,
+      volleybalNlCategory,
+      volleybalNlTeamNumber
+    } = body
 
     if (!name || !sportId) {
       return NextResponse.json(
@@ -72,6 +80,10 @@ export async function POST(request: Request) {
         name,
         description,
         sportId,
+        volleybalNlApiId: volleybalNlApiId || null,
+        volleybalNlClubId: volleybalNlClubId || null,
+        volleybalNlCategory: volleybalNlCategory || null,
+        volleybalNlTeamNumber: volleybalNlTeamNumber || null,
         members: {
           create: {
             userId: session.user.id,

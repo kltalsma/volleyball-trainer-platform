@@ -99,9 +99,7 @@ export async function DELETE(
       include: {
         team: {
           include: {
-            members: {
-              where: { userId: session.user.id }
-            }
+            members: true
           }
         }
       }
@@ -116,13 +114,21 @@ export async function DELETE(
 
     // Check if user is a coach/assistant coach of this team
     const isCoach = teamMember.team.members.some(m => 
-      m.role === "COACH" || m.role === "ASSISTANT_COACH"
+      m.userId === session.user.id && (m.role === "COACH" || m.role === "ASSISTANT_COACH")
     )
 
     if (!isCoach) {
       return NextResponse.json(
         { error: "Only coaches can remove team members" },
         { status: 403 }
+      )
+    }
+
+    // Prevent removing the last member (would orphan the team)
+    if (teamMember.team.members.length === 1) {
+      return NextResponse.json(
+        { error: "Cannot remove the last member. Delete the team instead if you want to remove it completely." },
+        { status: 400 }
       )
     }
 
