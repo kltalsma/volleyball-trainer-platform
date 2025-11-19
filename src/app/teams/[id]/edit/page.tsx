@@ -17,14 +17,28 @@ interface Team {
   sport: Sport
 }
 
+interface Member {
+  id: string
+  role: string
+  number: number | null
+  position: string | null
+  user: {
+    id: string
+    name: string | null
+    email: string
+  }
+}
+
 export default function EditTeamPage({ params }: { params: Promise<{ id: string }> }) {
   const unwrappedParams = use(params)
   const router = useRouter()
   const [sports, setSports] = useState<Sport[]>([])
   const [team, setTeam] = useState<Team | null>(null)
+  const [members, setMembers] = useState<Member[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
+  const [success, setSuccess] = useState("")
   
   const [formData, setFormData] = useState({
     name: "",
@@ -32,9 +46,21 @@ export default function EditTeamPage({ params }: { params: Promise<{ id: string 
     sportId: ""
   })
 
+  const [showAddMember, setShowAddMember] = useState(false)
+  const [memberForm, setMemberForm] = useState({
+    email: "",
+    name: "",
+    role: "PLAYER",
+    number: "",
+    position: ""
+  })
+
+  const [editingMember, setEditingMember] = useState<string | null>(null)
+
   useEffect(() => {
     fetchTeam()
     fetchSports()
+    fetchMembers()
   }, [unwrappedParams.id])
 
   async function fetchTeam() {
@@ -71,9 +97,22 @@ export default function EditTeamPage({ params }: { params: Promise<{ id: string 
     }
   }
 
+  async function fetchMembers() {
+    try {
+      const response = await fetch(`/api/team-members?teamId=${unwrappedParams.id}`)
+      if (response.ok) {
+        const data = await response.json()
+        setMembers(data.members || [])
+      }
+    } catch (error) {
+      console.error("Error fetching members:", error)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
+    setSuccess("")
 
     if (!formData.name || !formData.sportId) {
       setError("Team name and sport are required")
@@ -103,12 +142,117 @@ export default function EditTeamPage({ params }: { params: Promise<{ id: string 
         return
       }
 
-      router.push(`/teams/${unwrappedParams.id}`)
-      router.refresh()
+      setSuccess("Team updated successfully!")
+      setTimeout(() => setSuccess(""), 3000)
     } catch (err) {
       console.error("Error updating team:", err)
       setError("An unexpected error occurred")
+    } finally {
       setSaving(false)
+    }
+  }
+
+  const handleAddMember = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError("")
+    setSuccess("")
+
+    if (!memberForm.email || !memberForm.name) {
+      setError("Email and name are required")
+      return
+    }
+
+    try {
+      const response = await fetch("/api/team-members", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          teamId: unwrappedParams.id,
+          ...memberForm,
+          number: memberForm.number ? parseInt(memberForm.number) : undefined
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setError(data.error || "Failed to add member")
+        return
+      }
+
+      setSuccess("Member added successfully!")
+      setShowAddMember(false)
+      setMemberForm({
+        email: "",
+        name: "",
+        role: "PLAYER",
+        number: "",
+        position: ""
+      })
+      fetchMembers()
+      setTimeout(() => setSuccess(""), 3000)
+    } catch (err) {
+      console.error("Error adding member:", err)
+      setError("An unexpected error occurred")
+    }
+  }
+
+  const handleUpdateMember = async (memberId: string, updates: any) => {
+    setError("")
+    setSuccess("")
+
+    try {
+      const response = await fetch(`/api/team-members/${memberId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updates),
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        setError(data.error || "Failed to update member")
+        return
+      }
+
+      setSuccess("Member updated successfully!")
+      setEditingMember(null)
+      fetchMembers()
+      setTimeout(() => setSuccess(""), 3000)
+    } catch (err) {
+      console.error("Error updating member:", err)
+      setError("An unexpected error occurred")
+    }
+  }
+
+  const handleDeleteMember = async (memberId: string) => {
+    if (!confirm("Are you sure you want to remove this member from the team?")) {
+      return
+    }
+
+    setError("")
+    setSuccess("")
+
+    try {
+      const response = await fetch(`/api/team-members/${memberId}`, {
+        method: "DELETE",
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        setError(data.error || "Failed to remove member")
+        return
+      }
+
+      setSuccess("Member removed successfully!")
+      fetchMembers()
+      setTimeout(() => setSuccess(""), 3000)
+    } catch (err) {
+      console.error("Error removing member:", err)
+      setError("An unexpected error occurred")
     }
   }
 
@@ -127,13 +271,13 @@ export default function EditTeamPage({ params }: { params: Promise<{ id: string 
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
         <header className="bg-white shadow-sm border-b">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <Link href="/teams" className="text-gray-600 hover:text-gray-900">
               ← Back to Teams
             </Link>
           </div>
         </header>
-        <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <p className="text-red-800">{error}</p>
           </div>
@@ -146,7 +290,7 @@ export default function EditTeamPage({ params }: { params: Promise<{ id: string 
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       {/* Header */}
       <header className="bg-white shadow-sm border-b">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center gap-4">
             <Link href={`/teams/${unwrappedParams.id}`} className="text-gray-600 hover:text-gray-900">
               ← Back to Team
@@ -157,15 +301,25 @@ export default function EditTeamPage({ params }: { params: Promise<{ id: string 
       </header>
 
       {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <form onSubmit={handleSubmit} className="space-y-6">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="space-y-6">
+          {/* Success/Error Messages */}
           {error && (
             <div className="rounded-lg bg-red-50 p-4 border border-red-200">
               <p className="text-sm text-red-800">{error}</p>
             </div>
           )}
+          
+          {success && (
+            <div className="rounded-lg bg-green-50 p-4 border border-green-200">
+              <p className="text-sm text-green-800">{success}</p>
+            </div>
+          )}
 
-          <div className="bg-white rounded-xl shadow-sm border p-6 space-y-6">
+          {/* Team Information Form */}
+          <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm border p-6 space-y-6">
+            <h2 className="text-lg font-semibold text-gray-900">Team Information</h2>
+            
             {/* Team Name */}
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
@@ -217,25 +371,253 @@ export default function EditTeamPage({ params }: { params: Promise<{ id: string 
                 ))}
               </select>
             </div>
+
+            {/* Submit button */}
+            <div className="flex gap-4 pt-4">
+              <button
+                type="submit"
+                disabled={saving}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {saving ? "Saving..." : "Save Team Info"}
+              </button>
+            </div>
+          </form>
+
+          {/* Team Members Section */}
+          <div className="bg-white rounded-xl shadow-sm border p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Team Members ({members.length})
+              </h2>
+              <button
+                type="button"
+                onClick={() => setShowAddMember(!showAddMember)}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              >
+                {showAddMember ? "Cancel" : "+ Add Member"}
+              </button>
+            </div>
+
+            {/* Add Member Form */}
+            {showAddMember && (
+              <form onSubmit={handleAddMember} className="mb-6 p-4 bg-gray-50 rounded-lg border space-y-4">
+                <h3 className="font-medium text-gray-900">Add New Member</h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Email *
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={memberForm.email}
+                      onChange={(e) => setMemberForm({ ...memberForm, email: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="member@example.com"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Full Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={memberForm.name}
+                      onChange={(e) => setMemberForm({ ...memberForm, name: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="John Doe"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Role *
+                    </label>
+                    <select
+                      value={memberForm.role}
+                      onChange={(e) => setMemberForm({ ...memberForm, role: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="PLAYER">Player</option>
+                      <option value="COACH">Coach</option>
+                      <option value="ASSISTANT_COACH">Assistant Coach</option>
+                      <option value="PARENT">Parent</option>
+                      <option value="VOLUNTEER">Volunteer</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Jersey Number
+                    </label>
+                    <input
+                      type="number"
+                      value={memberForm.number}
+                      onChange={(e) => setMemberForm({ ...memberForm, number: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="e.g., 7"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Position
+                    </label>
+                    <input
+                      type="text"
+                      value={memberForm.position}
+                      onChange={(e) => setMemberForm({ ...memberForm, position: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="e.g., Outside Hitter, Setter, Libero"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Add Member
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddMember(false)}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* Members List */}
+            {members.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <p>No members yet. Add your first team member!</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {members.map((member) => (
+                  <div
+                    key={member.id}
+                    className="p-4 bg-gray-50 rounded-lg border hover:border-blue-300 transition-colors"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="font-medium text-gray-900">
+                            {member.user.name || member.user.email}
+                          </h3>
+                          <span className={`px-2 py-1 text-xs rounded-full ${
+                            member.role === 'COACH' ? 'bg-purple-100 text-purple-700' :
+                            member.role === 'ASSISTANT_COACH' ? 'bg-blue-100 text-blue-700' :
+                            member.role === 'PLAYER' ? 'bg-green-100 text-green-700' :
+                            'bg-gray-100 text-gray-700'
+                          }`}>
+                            {member.role.replace('_', ' ')}
+                          </span>
+                          {member.number && (
+                            <span className="px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded-full">
+                              #{member.number}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          <p>{member.user.email}</p>
+                          {member.position && <p>Position: {member.position}</p>}
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setEditingMember(editingMember === member.id ? null : member.id)}
+                          className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                        >
+                          {editingMember === member.id ? "Cancel" : "Edit"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteMember(member.id)}
+                          className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Edit Member Form */}
+                    {editingMember === member.id && (
+                      <div className="mt-4 pt-4 border-t space-y-3">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                              Role
+                            </label>
+                            <select
+                              defaultValue={member.role}
+                              onChange={(e) => handleUpdateMember(member.id, { role: e.target.value })}
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                              <option value="PLAYER">Player</option>
+                              <option value="COACH">Coach</option>
+                              <option value="ASSISTANT_COACH">Assistant Coach</option>
+                              <option value="PARENT">Parent</option>
+                              <option value="VOLUNTEER">Volunteer</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                              Number
+                            </label>
+                            <input
+                              type="number"
+                              defaultValue={member.number || ""}
+                              onBlur={(e) => handleUpdateMember(member.id, { 
+                                number: e.target.value ? parseInt(e.target.value) : null 
+                              })}
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              placeholder="Jersey #"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                              Position
+                            </label>
+                            <input
+                              type="text"
+                              defaultValue={member.position || ""}
+                              onBlur={(e) => handleUpdateMember(member.id, { position: e.target.value || null })}
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              placeholder="Position"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Submit buttons */}
-          <div className="flex gap-4">
-            <button
-              type="submit"
-              disabled={saving}
-              className="flex-1 py-3 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {saving ? "Saving..." : "Save Changes"}
-            </button>
+          {/* Back Button */}
+          <div className="flex justify-end">
             <Link
               href={`/teams/${unwrappedParams.id}`}
-              className="py-3 px-6 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-center"
+              className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
             >
-              Cancel
+              Done
             </Link>
           </div>
-        </form>
+        </div>
       </main>
     </div>
   )
