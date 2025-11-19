@@ -3,6 +3,7 @@ import { redirect, notFound } from "next/navigation"
 import Link from "next/link"
 import { prisma } from "@/lib/prisma"
 import DiagramViewer from "@/components/diagram-viewer"
+import AddToTrainingButton from "@/components/add-to-training-button"
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -72,16 +73,21 @@ export default async function ExerciseDetailPage({ params }: PageProps) {
                 ← Back to Exercises
               </Link>
             </div>
-            {exercise.creatorId === session.user.id && (
-              <div className="flex gap-2">
+            <div className="flex gap-2">
+              <AddToTrainingButton 
+                exerciseId={exercise.id}
+                exerciseTitle={exercise.title}
+                exerciseDuration={exercise.duration}
+              />
+              {exercise.creatorId === session.user.id && (
                 <Link
                   href={`/exercises/${exercise.id}/edit`}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   Edit
                 </Link>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </header>

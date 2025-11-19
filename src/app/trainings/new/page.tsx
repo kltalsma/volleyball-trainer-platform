@@ -30,6 +30,7 @@ export default function NewTrainingPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const preselectedTeamId = searchParams.get("teamId")
+  const preselectedExerciseId = searchParams.get("exerciseId")
   
   const [teams, setTeams] = useState<Team[]>([])
   const [exercises, setExercises] = useState<Exercise[]>([])
@@ -52,6 +53,16 @@ export default function NewTrainingPage() {
     fetchTeams()
     fetchExercises()
   }, [])
+
+  // Pre-select exercise if provided in URL
+  useEffect(() => {
+    if (preselectedExerciseId && exercises.length > 0 && selectedExercises.length === 0) {
+      const exercise = exercises.find(ex => ex.id === preselectedExerciseId)
+      if (exercise) {
+        addExercise(exercise)
+      }
+    }
+  }, [preselectedExerciseId, exercises])
 
   async function fetchTeams() {
     try {
