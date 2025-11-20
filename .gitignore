@@ -50,3 +50,6 @@ redis_data/
 test-*.js
 test-*.ts
 test-*.md
+
+# Temporary development files
+tmp/
