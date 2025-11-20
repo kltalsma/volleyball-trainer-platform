@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs"
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(prisma) as any,
+  trustHost: true, // Allow Railway health checks and dynamic hosts
   providers: [
     Credentials({
       credentials: {
