@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const teamId = searchParams.get('teamId')
+    const workoutId = searchParams.get('workoutId')
     const status = searchParams.get('status')
     const from = searchParams.get('from') // ISO date string
     const to = searchParams.get('to') // ISO date string
@@ -21,10 +22,14 @@ export async function GET(request: NextRequest) {
     // Build where clause
     const where: any = {}
     
+    if (workoutId) {
+      where.workoutId = workoutId
+    }
+    
     if (teamId) {
       where.teamId = teamId
-    } else {
-      // Get all teams where user is a member
+    } else if (!workoutId) {
+      // Get all teams where user is a member (only if not filtering by workoutId)
       const userTeams = await prisma.teamMember.findMany({
         where: { userId: user.id },
         select: { teamId: true }
@@ -77,6 +82,22 @@ export async function GET(request: NextRequest) {
                 }
               }
             }
+          }
+        },
+        exercises: {
+          include: {
+            exercise: {
+              select: {
+                id: true,
+                title: true,
+                description: true,
+                difficulty: true,
+                duration: true,
+              }
+            }
+          },
+          orderBy: {
+            order: 'asc'
           }
         }
       },
@@ -196,7 +217,27 @@ export async function POST(request: NextRequest) {
       }))
     })
 
-    // Fetch the complete session with attendance
+    // If a workout was selected, copy its exercises to the session
+    if (workoutId) {
+      const workoutExercises = await prisma.workoutExercise.findMany({
+        where: { workoutId },
+        orderBy: { order: 'asc' }
+      })
+
+      if (workoutExercises.length > 0) {
+        await prisma.sessionExercise.createMany({
+          data: workoutExercises.map(we => ({
+            sessionId: trainingSession.id,
+            exerciseId: we.exerciseId,
+            order: we.order,
+            duration: we.duration,
+            notes: we.notes
+          }))
+        })
+      }
+    }
+
+    // Fetch the complete session with attendance and exercises
     const completeSession = await prisma.trainingSession.findUnique({
       where: { id: trainingSession.id },
       include: {
@@ -226,6 +267,22 @@ export async function POST(request: NextRequest) {
                 }
               }
             }
+          }
+        },
+        exercises: {
+          include: {
+            exercise: {
+              select: {
+                id: true,
+                title: true,
+                description: true,
+                difficulty: true,
+                duration: true,
+              }
+            }
+          },
+          orderBy: {
+            order: 'asc'
           }
         }
       }

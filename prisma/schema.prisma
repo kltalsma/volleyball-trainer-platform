@@ -24,6 +24,7 @@ model User {
   
   // Relations
   teams         TeamMember[]
+  createdTeams  Team[]        @relation("TeamCreator")
   createdExercises Exercise[]
   createdWorkouts  Workout[]
   favoriteExercises FavoriteExercise[]
@@ -72,7 +73,7 @@ model Team {
   
   // Relations
   sport       Sport        @relation(fields: [sportId], references: [id])
-  creator     User         @relation(fields: [creatorId], references: [id])
+  creator     User         @relation("TeamCreator", fields: [creatorId], references: [id])
   members     TeamMember[]
   workouts    Workout[]
   trainingSessions TrainingSession[]
@@ -137,6 +138,7 @@ model Exercise {
   category    ExerciseCategory? @relation(fields: [categoryId], references: [id])
   creator     User      @relation(fields: [creatorId], references: [id])
   workoutExercises WorkoutExercise[]
+  sessionExercises SessionExercise[]
   favorites   FavoriteExercise[]
   
   @@index([sportId])
@@ -244,6 +246,7 @@ model TrainingSession {
   team        Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
   workout     Workout?  @relation(fields: [workoutId], references: [id])
   attendance  TrainingAttendance[]
+  exercises   SessionExercise[]
   
   @@index([teamId])
   @@index([scheduledAt])
@@ -280,4 +283,23 @@ enum AttendanceStatus {
   ABSENT
   LATE
   EXCUSED
+}
+
+// Session Exercises (exercises in training sessions)
+model SessionExercise {
+  id         String   @id @default(cuid())
+  sessionId  String
+  exerciseId String
+  order      Int
+  duration   Int?     // in minutes
+  notes      String?
+  createdAt  DateTime @default(now())
+  
+  // Relations
+  session    TrainingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  exercise   Exercise @relation(fields: [exerciseId], references: [id])
+  
+  @@unique([sessionId, order])
+  @@index([sessionId])
+  @@map("session_exercises")
 }
