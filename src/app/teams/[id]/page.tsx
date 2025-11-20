@@ -33,6 +33,30 @@ interface Member {
   }
 }
 
+interface ScheduledTraining {
+  id: string
+  teamId: string
+  workoutId: string | null
+  title: string
+  description: string | null
+  scheduledAt: string
+  duration: number | null
+  location: string | null
+  status: string
+  workout: {
+    id: string
+    title: string
+  } | null
+  attendanceSummary: {
+    total: number
+    present: number
+    absent: number
+    late: number
+    excused: number
+    pending: number
+  }
+}
+
 interface Team {
   id: string
   name: string
@@ -58,11 +82,14 @@ export default function TeamDetailPage() {
   const params = useParams()
   const router = useRouter()
   const [team, setTeam] = useState<Team | null>(null)
+  const [scheduledTrainings, setScheduledTrainings] = useState<ScheduledTraining[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
+  const [showScheduleModal, setShowScheduleModal] = useState(false)
 
   useEffect(() => {
     fetchTeam()
+    fetchScheduledTrainings()
   }, [params.id])
 
   async function fetchTeam() {
@@ -85,6 +112,18 @@ export default function TeamDetailPage() {
       setError("Failed to load team")
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function fetchScheduledTrainings() {
+    try {
+      const response = await fetch(`/api/training-sessions?teamId=${params.id}`)
+      if (response.ok) {
+        const data = await response.json()
+        setScheduledTrainings(data)
+      }
+    } catch (error) {
+      console.error("Error fetching scheduled trainings:", error)
     }
   }
 
@@ -190,6 +229,108 @@ export default function TeamDetailPage() {
               <p className="text-2xl font-bold text-gray-900">{team._count.workouts}</p>
             </div>
           </div>
+        </div>
+
+        {/* Scheduled Trainings Section */}
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-semibold text-gray-900">📅 Scheduled Trainings</h2>
+            <button
+              onClick={() => setShowScheduleModal(true)}
+              className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition"
+            >
+              + Schedule Training
+            </button>
+          </div>
+
+          {scheduledTrainings.length === 0 ? (
+            <div className="text-center py-12 bg-gray-50 rounded-lg">
+              <p className="text-gray-500 text-lg mb-2">No scheduled trainings yet</p>
+              <p className="text-sm text-gray-400 mb-4">Schedule a training to track attendance</p>
+              <button
+                onClick={() => setShowScheduleModal(true)}
+                className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition"
+              >
+                Schedule First Training
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {scheduledTrainings.map((training) => {
+                const isPast = new Date(training.scheduledAt) < new Date()
+                const isToday = new Date(training.scheduledAt).toDateString() === new Date().toDateString()
+                
+                return (
+                  <Link
+                    key={training.id}
+                    href={`/teams/${params.id}/trainings/${training.id}`}
+                    className="block p-4 rounded-lg border hover:border-blue-300 hover:shadow-sm transition"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-semibold text-gray-900">{training.title}</h3>
+                          {isToday && (
+                            <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-full">
+                              Today
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-600">
+                          {format(new Date(training.scheduledAt), "EEEE, MMMM d, yyyy 'at' h:mm a")}
+                        </p>
+                        {training.location && (
+                          <p className="text-xs text-gray-500 mt-1">📍 {training.location}</p>
+                        )}
+                        {training.workout && (
+                          <p className="text-xs text-blue-600 mt-1">
+                            Based on: {training.workout.title}
+                          </p>
+                        )}
+                        
+                        {/* Attendance Summary */}
+                        <div className="flex gap-4 mt-3 text-sm">
+                          <span className="text-gray-600">
+                            👥 {training.attendanceSummary.total} members
+                          </span>
+                          {isPast ? (
+                            <>
+                              <span className="text-green-600">
+                                ✓ {training.attendanceSummary.present} present
+                              </span>
+                              {training.attendanceSummary.absent > 0 && (
+                                <span className="text-red-600">
+                                  ✗ {training.attendanceSummary.absent} absent
+                                </span>
+                              )}
+                              {training.attendanceSummary.late > 0 && (
+                                <span className="text-yellow-600">
+                                  ⏰ {training.attendanceSummary.late} late
+                                </span>
+                              )}
+                            </>
+                          ) : (
+                            <span className="text-gray-500">
+                              ⏱ {training.attendanceSummary.pending} pending
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <span className={`px-3 py-1 text-xs font-medium rounded-full whitespace-nowrap ${
+                        training.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
+                        training.status === 'CANCELLED' ? 'bg-red-100 text-red-700' :
+                        isPast ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-blue-100 text-blue-700'
+                      }`}>
+                        {training.status === 'SCHEDULED' && isPast ? 'NEEDS REVIEW' : training.status}
+                      </span>
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+          )}
         </div>
 
         {/* Trainings Section */}
@@ -320,6 +461,223 @@ export default function TeamDetailPage() {
               </tbody>
             </table>
           </div>
+        </div>
+      </div>
+
+      {/* Schedule Training Modal */}
+      {showScheduleModal && (
+        <ScheduleTrainingModal
+          teamId={params.id as string}
+          teamName={team.name}
+          trainingPlans={team.workouts}
+          onClose={() => setShowScheduleModal(false)}
+          onSuccess={() => {
+            setShowScheduleModal(false)
+            fetchScheduledTrainings()
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
+// Schedule Training Modal Component
+function ScheduleTrainingModal({
+  teamId,
+  teamName,
+  trainingPlans,
+  onClose,
+  onSuccess
+}: {
+  teamId: string
+  teamName: string
+  trainingPlans: Training[]
+  onClose: () => void
+  onSuccess: () => void
+}) {
+  const [formData, setFormData] = useState({
+    workoutId: "",
+    title: "",
+    description: "",
+    scheduledAt: "",
+    duration: "",
+    location: ""
+  })
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState("")
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError("")
+    setSubmitting(true)
+
+    try {
+      const response = await fetch("/api/training-sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          teamId,
+          workoutId: formData.workoutId || null,
+          title: formData.title,
+          description: formData.description || null,
+          scheduledAt: new Date(formData.scheduledAt).toISOString(),
+          duration: formData.duration ? parseInt(formData.duration) : null,
+          location: formData.location || null
+        })
+      })
+
+      if (response.ok) {
+        onSuccess()
+      } else {
+        const data = await response.json()
+        setError(data.error || "Failed to schedule training")
+      }
+    } catch (err) {
+      console.error("Error scheduling training:", err)
+      setError("An error occurred while scheduling the training")
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  function handleWorkoutChange(workoutId: string) {
+    const workout = trainingPlans.find(w => w.id === workoutId)
+    setFormData({
+      ...formData,
+      workoutId,
+      title: workout?.title || formData.title,
+      duration: workout?.totalDuration?.toString() || formData.duration
+    })
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">Schedule Training</h2>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              ✕
+            </button>
+          </div>
+
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Training Plan (Optional)
+              </label>
+              <select
+                value={formData.workoutId}
+                onChange={(e) => handleWorkoutChange(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">Custom training (no plan)</option>
+                {trainingPlans.map((plan) => (
+                  <option key={plan.id} value={plan.id}>
+                    {plan.title} ({plan._count.exercises} exercises)
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                Select a training plan or create a custom training
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Title <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                required
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="e.g., Monday Training, Match Preparation"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Description
+              </label>
+              <textarea
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Any additional notes or instructions..."
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Date & Time <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="datetime-local"
+                  required
+                  value={formData.scheduledAt}
+                  onChange={(e) => setFormData({ ...formData, scheduledAt: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Duration (minutes)
+                </label>
+                <input
+                  type="number"
+                  value={formData.duration}
+                  onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="90"
+                  min="1"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Location
+              </label>
+              <input
+                type="text"
+                value={formData.location}
+                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="e.g., Main Gym, Court 1"
+              />
+            </div>
+
+            <div className="flex gap-3 pt-4 border-t">
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={submitting}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {submitting ? "Scheduling..." : "Schedule Training"}
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>

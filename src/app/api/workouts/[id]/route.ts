@@ -58,8 +58,14 @@ export async function GET(
       )
     }
 
-    // Check access rights
-    if (!workout.isPublic && workout.creatorId !== session.user.id) {
+    // Check access rights - ADMIN can view all workouts
+    const currentUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: true }
+    })
+    const isAdmin = currentUser?.role === 'ADMIN'
+    
+    if (!isAdmin && !workout.isPublic && workout.creatorId !== session.user.id) {
       return NextResponse.json(
         { error: "Access denied" },
         { status: 403 }
@@ -99,7 +105,14 @@ export async function PATCH(
       )
     }
 
-    if (workout.creatorId !== session.user.id) {
+    // Check if user is ADMIN or creator
+    const currentUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: true }
+    })
+    const isAdmin = currentUser?.role === 'ADMIN'
+
+    if (!isAdmin && workout.creatorId !== session.user.id) {
       return NextResponse.json(
         { error: "Access denied" },
         { status: 403 }
@@ -114,7 +127,8 @@ export async function PATCH(
       isPublic,
       startTime,
       endTime,
-      totalDuration
+      totalDuration,
+      diagram
     } = body
 
     const updated = await prisma.workout.update({
@@ -126,7 +140,8 @@ export async function PATCH(
         ...(isPublic !== undefined && { isPublic }),
         ...(startTime !== undefined && { startTime: startTime ? new Date(startTime) : null }),
         ...(endTime !== undefined && { endTime: endTime ? new Date(endTime) : null }),
-        ...(totalDuration !== undefined && { totalDuration })
+        ...(totalDuration !== undefined && { totalDuration }),
+        ...(diagram !== undefined && { diagram })
       },
       include: {
         creator: {
@@ -190,7 +205,14 @@ export async function DELETE(
       )
     }
 
-    if (workout.creatorId !== session.user.id) {
+    // Check if user is ADMIN or creator
+    const currentUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: true }
+    })
+    const isAdmin = currentUser?.role === 'ADMIN'
+
+    if (!isAdmin && workout.creatorId !== session.user.id) {
       return NextResponse.json(
         { error: "Access denied" },
         { status: 403 }

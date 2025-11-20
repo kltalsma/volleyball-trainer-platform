@@ -3,6 +3,7 @@
 import { use, useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import DrawingCanvas from "@/components/drawing-canvas"
 
 interface Team {
   id: string
@@ -58,7 +59,8 @@ export default function EditTrainingPage({ params }: { params: Promise<{ id: str
     isPublic: false,
     startTime: "",
     endTime: "",
-    totalDuration: ""
+    totalDuration: "",
+    diagram: ""
   })
 
   useEffect(() => {
@@ -83,7 +85,8 @@ export default function EditTrainingPage({ params }: { params: Promise<{ id: str
           isPublic: data.isPublic || false,
           startTime: data.startTime ? new Date(data.startTime).toISOString().slice(0, 16) : "",
           endTime: data.endTime ? new Date(data.endTime).toISOString().slice(0, 16) : "",
-          totalDuration: data.totalDuration?.toString() || ""
+          totalDuration: data.totalDuration?.toString() || "",
+          diagram: data.diagram || ""
         })
       } else {
         setError("Failed to load training")
@@ -270,7 +273,8 @@ export default function EditTrainingPage({ params }: { params: Promise<{ id: str
           isPublic: formData.isPublic,
           startTime: formData.startTime || undefined,
           endTime: formData.endTime || undefined,
-          totalDuration: formData.totalDuration ? parseInt(formData.totalDuration) : undefined
+          totalDuration: formData.totalDuration ? parseInt(formData.totalDuration) : undefined,
+          diagram: formData.diagram || undefined
         }),
       })
 
@@ -671,6 +675,18 @@ export default function EditTrainingPage({ params }: { params: Promise<{ id: str
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Diagram Canvas */}
+          <div className="bg-white rounded-xl shadow-sm border p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Training Diagram</h2>
+            <p className="text-sm text-gray-600 mb-4">
+              Draw your training setup and player positions on the volleyball court below.
+            </p>
+            <DrawingCanvas
+              onChange={(diagram) => setFormData({ ...formData, diagram })}
+              initialDiagram={formData.diagram}
+            />
           </div>
 
           {/* Submit buttons */}

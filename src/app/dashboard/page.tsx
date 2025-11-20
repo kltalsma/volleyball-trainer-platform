@@ -10,6 +10,13 @@ export default async function DashboardPage() {
     redirect("/login")
   }
 
+  // Check if user is ADMIN
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { role: true }
+  })
+  const isAdmin = user?.role === 'ADMIN'
+
   // Fetch real counts and data with contextual breakdown
   const [
     myExerciseCount,
@@ -37,7 +44,9 @@ export default async function DashboardPage() {
       where: { creatorId: session.user.id }
     }),
     prisma.workout.count({
-      where: {
+      where: isAdmin ? {
+        creatorId: { not: session.user.id }
+      } : {
         AND: [
           { creatorId: { not: session.user.id } },
           {
@@ -59,7 +68,7 @@ export default async function DashboardPage() {
     }),
     // Team stats
     prisma.team.count({
-      where: {
+      where: isAdmin ? {} : {
         members: {
           some: {
             userId: session.user.id
@@ -69,9 +78,9 @@ export default async function DashboardPage() {
     }),
     // Total community users
     prisma.user.count(),
-    // My teams
+    // My teams (ADMIN sees all teams)
     prisma.team.findMany({
-      where: {
+      where: isAdmin ? {} : {
         members: {
           some: {
             userId: session.user.id
@@ -114,7 +123,7 @@ export default async function DashboardPage() {
     prisma.workout.findMany({
       where: {
         AND: [
-          {
+          isAdmin ? {} : {
             OR: [
               { creatorId: session.user.id },
               {
@@ -167,9 +176,9 @@ export default async function DashboardPage() {
     }),
     // Get recent activity from multiple sources
     Promise.all([
-      // Recent workouts
+      // Recent workouts (ADMIN sees all)
       prisma.workout.findMany({
-        where: {
+        where: isAdmin ? {} : {
           OR: [
             { creatorId: session.user.id },
             {
@@ -203,9 +212,9 @@ export default async function DashboardPage() {
         },
         take: 5
       }),
-      // Recent exercises
+      // Recent exercises (ADMIN sees all)
       prisma.exercise.findMany({
-        where: {
+        where: isAdmin ? {} : {
           OR: [
             { creatorId: session.user.id },
             { isPublic: true }
@@ -225,9 +234,9 @@ export default async function DashboardPage() {
         },
         take: 5
       }),
-      // Recent teams
+      // Recent teams (ADMIN sees all)
       prisma.team.findMany({
-        where: {
+        where: isAdmin ? {} : {
           members: {
             some: {
               userId: session.user.id
@@ -335,12 +344,6 @@ export default async function DashboardPage() {
                 className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:border-b-2 hover:border-gray-300 transition-colors"
               >
                 📋 Trainings
-              </a>
-              <a
-                href="/sessions"
-                className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:border-b-2 hover:border-gray-300 transition-colors"
-              >
-                📅 Sessions
               </a>
               <a
                 href="/exercises"

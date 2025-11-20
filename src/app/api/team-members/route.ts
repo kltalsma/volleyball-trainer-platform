@@ -23,9 +23,15 @@ export async function POST(request: Request) {
     // Verify the team exists and user has permission
     const team = await prisma.team.findUnique({
       where: { id: teamId },
-      include: {
+      select: {
+        id: true,
+        creatorId: true,
         members: {
-          where: { userId: session.user.id }
+          select: {
+            id: true,
+            userId: true,
+            role: true
+          }
         }
       }
     })
@@ -37,14 +43,19 @@ export async function POST(request: Request) {
       )
     }
 
-    // Check if user is a coach/assistant coach of this team
-    const isCoach = team.members.some(m => 
-      m.role === "COACH" || m.role === "ASSISTANT_COACH"
-    )
+    // Check if user is ADMIN, team creator, OR a coach/assistant coach of this team
+    const currentUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: true }
+    })
+    const isAdmin = currentUser?.role === 'ADMIN'
+    const isCreator = team.creatorId === session.user.id
+    const currentUserMember = team.members.find(m => m.userId === session.user.id)
+    const isCoach = currentUserMember && (currentUserMember.role === "COACH" || currentUserMember.role === "ASSISTANT_COACH")
 
-    if (!isCoach) {
+    if (!isAdmin && !isCreator && !isCoach) {
       return NextResponse.json(
-        { error: "Only coaches can add members to the team" },
+        { error: "Only admins, the team creator, or coaches can add members to the team" },
         { status: 403 }
       )
     }
@@ -136,6 +147,13 @@ export async function GET(request: Request) {
       )
     }
 
+    // Check if user is ADMIN
+    const currentUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: true }
+    })
+    const isAdmin = currentUser?.role === 'ADMIN'
+
     // Verify the team exists and user has permission to view
     const team = await prisma.team.findUnique({
       where: { id: teamId },
@@ -153,8 +171,8 @@ export async function GET(request: Request) {
       )
     }
 
-    // Check if user is a member of this team
-    if (team.members.length === 0) {
+    // Check if user is ADMIN or a member of this team
+    if (!isAdmin && team.members.length === 0) {
       return NextResponse.json(
         { error: "You don't have permission to view this team" },
         { status: 403 }

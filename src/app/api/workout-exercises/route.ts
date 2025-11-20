@@ -43,8 +43,14 @@ export async function POST(request: Request) {
       )
     }
 
-    // Check if user is the creator or a team member
-    if (workout.creatorId !== session.user.id) {
+    // Check if user is ADMIN, workout creator, or team member
+    const currentUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: true }
+    })
+    const isAdmin = currentUser?.role === 'ADMIN'
+
+    if (!isAdmin && workout.creatorId !== session.user.id) {
       if (workout.teamId) {
         const teamMember = await prisma.teamMember.findFirst({
           where: {
@@ -147,8 +153,15 @@ export async function GET(request: Request) {
       )
     }
 
-    // Check if user has permission to view
-    const hasPermission = workout.isPublic || 
+    // Check if user is ADMIN or has permission to view
+    const currentUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: true }
+    })
+    const isAdmin = currentUser?.role === 'ADMIN'
+
+    const hasPermission = isAdmin || 
+                         workout.isPublic || 
                          workout.creatorId === session.user.id
 
     if (!hasPermission && workout.teamId) {
@@ -202,14 +215,14 @@ export async function GET(request: Request) {
       }
     })
 
-    // Filter out private exercises that don't belong to the current user
+    // Filter out private exercises that don't belong to the current user (unless ADMIN)
     // Replace them with a placeholder to maintain order
     const filteredExercises = workoutExercises.map(we => {
       const isOwner = we.exercise.creatorId === session.user.id
       const isPublicExercise = we.exercise.isPublic
       
-      // If exercise is private and user doesn't own it, hide the details
-      if (!isPublicExercise && !isOwner) {
+      // ADMIN can see all exercises, others follow privacy rules
+      if (!isAdmin && !isPublicExercise && !isOwner) {
         return {
           ...we,
           exercise: {

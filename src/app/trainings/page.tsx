@@ -29,7 +29,6 @@ interface Team {
 }
 
 export default function TrainingsPage() {
-  const router = useRouter()
   const [trainings, setTrainings] = useState<Training[]>([])
   const [teams, setTeams] = useState<Team[]>([])
   const [loading, setLoading] = useState(true)
@@ -39,21 +38,8 @@ export default function TrainingsPage() {
   const [viewFilter, setViewFilter] = useState("all")
   const [searchQuery, setSearchQuery] = useState("")
 
-  // Debounced search
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchTrainings()
-    }, 300)
-    
-    return () => clearTimeout(timer)
-  }, [teamFilter, viewFilter, searchQuery])
-
-  // Initial load
-  useEffect(() => {
-    fetchTeams()
-  }, [])
-
-  async function fetchTeams() {
+  // Fetch functions
+  const fetchTeams = async () => {
     try {
       const response = await fetch("/api/teams")
       if (response.ok) {
@@ -65,7 +51,7 @@ export default function TrainingsPage() {
     }
   }
 
-  async function fetchTrainings() {
+  const fetchTrainings = async () => {
     setLoading(true)
     try {
       const params = new URLSearchParams()
@@ -78,7 +64,7 @@ export default function TrainingsPage() {
       const response = await fetch(`/api/workouts?${params.toString()}`)
       if (response.ok) {
         const data = await response.json()
-        setTrainings(data.workouts)
+        setTrainings(data.workouts || [])
       }
     } catch (error) {
       console.error("Error fetching trainings:", error)
@@ -86,6 +72,26 @@ export default function TrainingsPage() {
       setLoading(false)
     }
   }
+
+  // Effects - simplified to prevent infinite loops
+  useEffect(() => {
+    fetchTeams()
+  }, [])
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchTrainings()
+    }, 300)
+    
+    return () => clearTimeout(timer)
+  }, [teamFilter, viewFilter, searchQuery])
+
+  // Initial load after teams are fetched
+  useEffect(() => {
+    if (teams.length > 0) {
+      fetchTrainings()
+    }
+  }, [teams])
 
   const formatDateTime = (dateString: string | null) => {
     if (!dateString) return "Not scheduled"

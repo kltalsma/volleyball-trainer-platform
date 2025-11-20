@@ -193,6 +193,7 @@ model Workout {
   startTime   DateTime? // When the training starts
   endTime     DateTime? // When the training ends
   totalDuration Int?    // in minutes (calculated or manual)
+  diagram     String?   @db.Text // JSON string of drawing canvas elements
   sportId     String?
   creatorId   String
   isPublic    Boolean   @default(false)

@@ -82,19 +82,27 @@ export async function GET(
       )
     }
 
-    // Check if user is a member of the team
-    const teamMember = await prisma.teamMember.findFirst({
-      where: {
-        teamId: trainingSession.teamId,
-        userId: user.id
-      }
+    // Check if user is ADMIN or a member of the team
+    const currentUser = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { role: true }
     })
+    const isAdmin = currentUser?.role === 'ADMIN'
+    
+    if (!isAdmin) {
+      const teamMember = await prisma.teamMember.findFirst({
+        where: {
+          teamId: trainingSession.teamId,
+          userId: user.id
+        }
+      })
 
-    if (!teamMember) {
-      return NextResponse.json(
-        { error: 'You do not have access to this training session' },
-        { status: 403 }
-      )
+      if (!teamMember) {
+        return NextResponse.json(
+          { error: 'You do not have access to this training session' },
+          { status: 403 }
+        )
+      }
     }
 
     // Add attendance summary
@@ -150,20 +158,28 @@ export async function PATCH(
       )
     }
 
-    // Check if user is a coach of the team
-    const teamMember = await prisma.teamMember.findFirst({
-      where: {
-        teamId: trainingSession.teamId,
-        userId: user.id,
-        role: { in: ['COACH', 'ASSISTANT_COACH'] }
-      }
+    // Check if user is ADMIN or a coach of the team
+    const currentUser = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { role: true }
     })
+    const isAdmin = currentUser?.role === 'ADMIN'
+    
+    if (!isAdmin) {
+      const teamMember = await prisma.teamMember.findFirst({
+        where: {
+          teamId: trainingSession.teamId,
+          userId: user.id,
+          role: { in: ['COACH', 'ASSISTANT_COACH'] }
+        }
+      })
 
-    if (!teamMember) {
-      return NextResponse.json(
-        { error: 'You must be a coach to update training sessions' },
-        { status: 403 }
-      )
+      if (!teamMember) {
+        return NextResponse.json(
+          { error: 'You must be a coach to update training sessions' },
+          { status: 403 }
+        )
+      }
     }
 
     const body = await request.json()
@@ -246,20 +262,28 @@ export async function DELETE(
       )
     }
 
-    // Check if user is a coach of the team
-    const teamMember = await prisma.teamMember.findFirst({
-      where: {
-        teamId: trainingSession.teamId,
-        userId: user.id,
-        role: { in: ['COACH', 'ASSISTANT_COACH'] }
-      }
+    // Check if user is ADMIN or a coach of the team
+    const currentUser = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { role: true }
     })
+    const isAdmin = currentUser?.role === 'ADMIN'
+    
+    if (!isAdmin) {
+      const teamMember = await prisma.teamMember.findFirst({
+        where: {
+          teamId: trainingSession.teamId,
+          userId: user.id,
+          role: { in: ['COACH', 'ASSISTANT_COACH'] }
+        }
+      })
 
-    if (!teamMember) {
-      return NextResponse.json(
-        { error: 'You must be a coach to delete training sessions' },
-        { status: 403 }
-      )
+      if (!teamMember) {
+        return NextResponse.json(
+          { error: 'You must be a coach to delete training sessions' },
+          { status: 403 }
+        )
+      }
     }
 
     // Delete the training session (attendance will be cascade deleted)

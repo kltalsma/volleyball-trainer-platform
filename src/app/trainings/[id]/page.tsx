@@ -4,6 +4,7 @@ import { use, useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import EmptyState from "@/components/EmptyState"
+import DiagramViewer from "@/components/diagram-viewer"
 
 interface Exercise {
   id: string
@@ -34,6 +35,7 @@ interface Training {
   id: string
   title: string
   description: string | null
+  diagram: string | null
   startTime: string | null
   endTime: string | null
   totalDuration: number | null
@@ -58,7 +60,7 @@ export default function TrainingDetailPage({ params }: { params: Promise<{ id: s
   const router = useRouter()
   const unwrappedParams = use(params)
   const [training, setTraining] = useState<Training | null>(null)
-  const [exercises, setExercises] = useState<WorkoutExercise[]>([])
+  const [exercises, setExercises] = useState<Exercise[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [deleting, setDeleting] = useState(false)
@@ -281,6 +283,14 @@ export default function TrainingDetailPage({ params }: { params: Promise<{ id: s
           </div>
         </div>
 
+        {/* Diagram Section */}
+        {training.diagram && (
+          <div className="bg-white rounded-xl shadow-sm border p-6 mb-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Training Diagram</h2>
+            <DiagramViewer diagram={training.diagram} />
+          </div>
+        )}
+
         {/* Exercises */}
         <div className="bg-white rounded-xl shadow-sm border p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-6">Training Plan</h2>
@@ -296,9 +306,10 @@ export default function TrainingDetailPage({ params }: { params: Promise<{ id: s
           ) : (
             <div className="space-y-4">
               {exercises.map((exercise, index) => (
-                <div
+                <Link
                   key={exercise.id}
-                  className={`p-4 rounded-lg border transition ${
+                  href={`/exercises/${exercise.exerciseId}`}
+                  className={`block p-4 rounded-lg border transition cursor-pointer ${
                     exercise.exercise.isPublic 
                       ? 'bg-gray-50 hover:border-blue-300 hover:shadow-sm' 
                       : 'bg-gray-100 border-gray-300 opacity-60'
@@ -314,23 +325,16 @@ export default function TrainingDetailPage({ params }: { params: Promise<{ id: s
                     <div className="flex-1">
                       <div className="flex items-start justify-between mb-2">
                         <div>
-                          {exercise.exercise.isPublic ? (
-                            <Link
-                              href={`/exercises/${exercise.exerciseId}`}
-                              className="text-lg font-semibold text-gray-900 hover:text-blue-600"
-                            >
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-lg font-semibold text-gray-900">
                               {exercise.exercise.title}
-                            </Link>
-                          ) : (
-                            <div className="flex items-center gap-2">
-                              <span className="text-lg font-semibold text-gray-400">
-                                🔒 {exercise.exercise.title}
-                              </span>
+                            </h3>
+                            {!exercise.exercise.isPublic && (
                               <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-xs rounded-full">
                                 Private
                               </span>
-                            </div>
-                          )}
+                            )}
+                          </div>
                           {exercise.exercise.category && (
                             <p className="text-sm text-gray-500 mt-1">
                               {exercise.exercise.category.name}
@@ -380,7 +384,7 @@ export default function TrainingDetailPage({ params }: { params: Promise<{ id: s
                       )}
                     </div>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           )}

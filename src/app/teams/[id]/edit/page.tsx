@@ -56,6 +56,7 @@ export default function EditTeamPage({ params }: { params: Promise<{ id: string 
   })
 
   const [editingMember, setEditingMember] = useState<string | null>(null)
+  const [memberEdits, setMemberEdits] = useState<Record<string, { role?: string; number?: number | null; position?: string | null }>>({})
 
   useEffect(() => {
     fetchTeam()
@@ -210,9 +211,16 @@ export default function EditTeamPage({ params }: { params: Promise<{ id: string 
     }
   }
 
-  const handleUpdateMember = async (memberId: string, updates: any) => {
+  const handleUpdateMember = async (memberId: string) => {
     setError("")
     setSuccess("")
+
+    const updates = memberEdits[memberId]
+    
+    if (!updates || Object.keys(updates).length === 0) {
+      setError("No changes to save")
+      return
+    }
 
     try {
       const response = await fetch(`/api/team-members/${memberId}`, {
@@ -222,21 +230,32 @@ export default function EditTeamPage({ params }: { params: Promise<{ id: string 
         },
         body: JSON.stringify(updates),
       })
-
+      
       if (!response.ok) {
         const data = await response.json()
         setError(data.error || "Failed to update member")
         return
       }
-
+      
       setSuccess("Member updated successfully!")
       setEditingMember(null)
+      setMemberEdits({})
       fetchMembers()
       setTimeout(() => setSuccess(""), 3000)
     } catch (err) {
       console.error("Error updating member:", err)
       setError("An unexpected error occurred")
     }
+  }
+
+  const updateMemberEdit = (memberId: string, field: string, value: any) => {
+    setMemberEdits(prev => ({
+      ...prev,
+      [memberId]: {
+        ...prev[memberId],
+        [field]: value
+      }
+    }))
   }
 
   const handleDeleteMember = async (memberId: string) => {
@@ -565,8 +584,8 @@ export default function EditTeamPage({ params }: { params: Promise<{ id: string 
                               Role
                             </label>
                             <select
-                              defaultValue={member.role}
-                              onChange={(e) => handleUpdateMember(member.id, { role: e.target.value })}
+                              value={memberEdits[member.id]?.role ?? member.role}
+                              onChange={(e) => updateMemberEdit(member.id, 'role', e.target.value)}
                               className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
                             >
                               <option value="PLAYER">Player</option>
@@ -583,10 +602,11 @@ export default function EditTeamPage({ params }: { params: Promise<{ id: string 
                             </label>
                             <input
                               type="number"
-                              defaultValue={member.number || ""}
-                              onBlur={(e) => handleUpdateMember(member.id, { 
-                                number: e.target.value ? parseInt(e.target.value) : null 
-                              })}
+                              value={(memberEdits[member.id]?.number !== undefined ? memberEdits[member.id]?.number : member.number) ?? ""}
+                              onChange={(e) => {
+                                const value = e.target.value
+                                updateMemberEdit(member.id, 'number', value ? parseInt(value, 10) : null)
+                              }}
                               className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
                               placeholder="Jersey #"
                             />
@@ -598,12 +618,36 @@ export default function EditTeamPage({ params }: { params: Promise<{ id: string 
                             </label>
                             <input
                               type="text"
-                              defaultValue={member.position || ""}
-                              onBlur={(e) => handleUpdateMember(member.id, { position: e.target.value || null })}
+                              value={memberEdits[member.id]?.position ?? member.position ?? ""}
+                              onChange={(e) => updateMemberEdit(member.id, 'position', e.target.value || null)}
                               className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
                               placeholder="Position"
                             />
                           </div>
+                        </div>
+
+                        <div className="flex gap-2 pt-2">
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateMember(member.id)}
+                            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm font-medium"
+                          >
+                            Save Changes
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingMember(null)
+                              setMemberEdits(prev => {
+                                const newEdits = { ...prev }
+                                delete newEdits[member.id]
+                                return newEdits
+                              })
+                            }}
+                            className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors text-sm font-medium"
+                          >
+                            Cancel
+                          </button>
                         </div>
                       </div>
                     )}

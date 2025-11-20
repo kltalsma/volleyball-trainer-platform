@@ -19,21 +19,35 @@ export async function GET(request: Request) {
     const limit = parseInt(searchParams.get("limit") || "20")
     const skip = (page - 1) * limit
 
-    // Default: show user's own workouts and workouts from teams they're members of
-    // Note: User can see ALL their created workouts regardless of team membership
-    const where: any = {
-      OR: [
-        { creatorId: session.user.id },
-        {
-          team: {
-            members: {
-              some: {
-                userId: session.user.id
+    // Check if user is ADMIN
+    const currentUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: true }
+    })
+    const isAdmin = currentUser?.role === 'ADMIN'
+
+    // ADMIN can see all workouts, others follow normal filtering rules
+    let where: any = {}
+
+    if (isAdmin) {
+      // ADMIN sees all workouts unless specifically filtered
+      where = {}
+    } else {
+      // Default: show user's own workouts and workouts from teams they're members of
+      where = {
+        OR: [
+          { creatorId: session.user.id },
+          {
+            team: {
+              members: {
+                some: {
+                  userId: session.user.id
+                }
               }
             }
           }
-        }
-      ]
+        ]
+      }
     }
 
     if (myWorkouts) {
@@ -41,8 +55,8 @@ export async function GET(request: Request) {
       delete where.OR
     }
 
-    // Show only public workouts when explicitly requested
-    if (publicOnly) {
+    // Show only public workouts when explicitly requested (unless ADMIN viewing all)
+    if (publicOnly && !isAdmin) {
       where.isPublic = true
       delete where.OR
     }

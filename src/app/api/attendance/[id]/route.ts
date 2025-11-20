@@ -31,30 +31,38 @@ export async function PATCH(
       )
     }
 
-    // Check if user is a coach of the team OR the member themselves
-    const teamMember = await prisma.teamMember.findFirst({
-      where: {
-        teamId: attendance.session.teamId,
-        userId: user.id
-      }
+    // Check if user is ADMIN, a coach of the team, OR the member themselves
+    const currentUser = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { role: true }
     })
+    const isAdmin = currentUser?.role === 'ADMIN'
+    
+    if (!isAdmin) {
+      const teamMember = await prisma.teamMember.findFirst({
+        where: {
+          teamId: attendance.session.teamId,
+          userId: user.id
+        }
+      })
 
-    if (!teamMember) {
-      return NextResponse.json(
-        { error: 'You do not have access to this attendance record' },
-        { status: 403 }
-      )
-    }
+      if (!teamMember) {
+        return NextResponse.json(
+          { error: 'You do not have access to this attendance record' },
+          { status: 403 }
+        )
+      }
 
-    const isCoach = ['COACH', 'ASSISTANT_COACH'].includes(teamMember.role)
-    const isSelf = attendance.memberId === teamMember.id
+      const isCoach = ['COACH', 'ASSISTANT_COACH'].includes(teamMember.role)
+      const isSelf = attendance.memberId === teamMember.id
 
-    // Only coaches can mark others, players can only mark themselves
-    if (!isCoach && !isSelf) {
-      return NextResponse.json(
-        { error: 'You can only update your own attendance' },
-        { status: 403 }
-      )
+      // Only coaches can mark others, players can only mark themselves
+      if (!isCoach && !isSelf) {
+        return NextResponse.json(
+          { error: 'You can only update your own attendance' },
+          { status: 403 }
+        )
+      }
     }
 
     const body = await request.json()

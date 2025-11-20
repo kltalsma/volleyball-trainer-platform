@@ -103,7 +103,7 @@ export default function NewTeamPage() {
         .join(' ')
       
       // Build description with ranking info
-      const descriptionParts = []
+      const descriptionParts: string[] = []
       if (team.ranking) {
         descriptionParts.push(team.ranking)
       }

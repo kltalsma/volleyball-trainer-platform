@@ -70,12 +70,19 @@ export async function GET(
 
     // Check if user has access to this team
     // User can access if they are:
-    // 1. A member of the team, OR
-    // 2. Have created a training for this team (substitute trainer)
+    // 1. An ADMIN user (full access to all teams), OR
+    // 2. A member of the team, OR
+    // 3. Have created a training for this team (substitute trainer)
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: true }
+    })
+    
+    const isAdmin = user?.role === 'ADMIN'
     const isMember = team.members.some(m => m.userId === session.user.id)
     const hasTrainingForTeam = team.workouts.some(w => w.creator.id === session.user.id)
     
-    if (!isMember && !hasTrainingForTeam) {
+    if (!isAdmin && !isMember && !hasTrainingForTeam) {
       return NextResponse.json(
         { error: "Access denied" },
         { status: 403 }
@@ -118,9 +125,15 @@ export async function PATCH(
       )
     }
 
-    // Check if user is a coach
+    // Check if user is ADMIN or a coach
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: true }
+    })
+    const isAdmin = user?.role === 'ADMIN'
     const member = team.members.find(m => m.userId === session.user.id)
-    if (!member || member.role === "PLAYER") {
+    
+    if (!isAdmin && (!member || member.role === "PLAYER")) {
       return NextResponse.json(
         { error: "Access denied" },
         { status: 403 }
@@ -183,9 +196,15 @@ export async function DELETE(
       )
     }
 
-    // Check if user is a coach
+    // Check if user is ADMIN or a coach
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: true }
+    })
+    const isAdmin = user?.role === 'ADMIN'
     const member = team.members.find(m => m.userId === session.user.id)
-    if (!member || member.role === "PLAYER") {
+    
+    if (!isAdmin && (!member || member.role === "PLAYER")) {
       return NextResponse.json(
         { error: "Access denied" },
         { status: 403 }

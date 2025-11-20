@@ -42,8 +42,14 @@ export async function GET(
       )
     }
 
-    // Check access rights
-    if (!exercise.isPublic && exercise.creatorId !== session.user.id) {
+    // Check access rights - ADMIN can view all exercises
+    const currentUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: true }
+    })
+    const isAdmin = currentUser?.role === 'ADMIN'
+    
+    if (!isAdmin && !exercise.isPublic && exercise.creatorId !== session.user.id) {
       return NextResponse.json(
         { error: "Access denied" },
         { status: 403 }
@@ -89,7 +95,14 @@ export async function PATCH(
       )
     }
 
-    if (exercise.creatorId !== session.user.id) {
+    // Check if user is ADMIN or creator
+    const currentUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: true }
+    })
+    const isAdmin = currentUser?.role === 'ADMIN'
+
+    if (!isAdmin && exercise.creatorId !== session.user.id) {
       return NextResponse.json(
         { error: "Access denied" },
         { status: 403 }
@@ -168,7 +181,14 @@ export async function DELETE(
       )
     }
 
-    if (exercise.creatorId !== session.user.id) {
+    // Check if user is ADMIN or creator
+    const currentUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: true }
+    })
+    const isAdmin = currentUser?.role === 'ADMIN'
+
+    if (!isAdmin && exercise.creatorId !== session.user.id) {
       return NextResponse.json(
         { error: "Access denied" },
         { status: 403 }

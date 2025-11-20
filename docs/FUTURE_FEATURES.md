@@ -1,105 +1,44 @@
 # Future Features
 
-## Nevobo/Mijn Volleybal Integration
+## Read-Only Cross-Team Viewing
 
-### Overview
-Integration with the official Dutch volleyball platform (volleybal.nl / mijnvolleybal.nl) to automatically sync team and competition data.
+### Problem
+Currently, users can only view teams where they have a specific role (COACH, ASSISTANT_COACH, or PLAYER). When a user is removed from COACH role (even if they're the team creator), they lose all access to view team information.
 
-### API Endpoint
-- Base URL: `https://api.nevobo.nl`
-- Club example: `https://www.volleybal.nl/competitie/vereniging/ckl6f7m` (OPM Heerenveen)
+### Use Case
+A trainer/coach who works with one team should be able to view information from other teams within the same organization for reference purposes:
+- View other teams' players/trainers
+- View other teams' training sessions
+- View other teams' exercises
+- **WITHOUT** being able to modify any information
 
-### Data Available
-Based on the club page structure, the following data appears to be available:
-- **Club Information**: Name, location, contact details
-- **Teams**: Multiple teams per club (e.g., Dames 1, Heren 2, U19, etc.)
-- **Competition Data**: League standings, match schedules, results
-- **Season Information**: Current and historical seasons
-- **Match Details**: Date, time, location, opponent, score
+### Proposed Solution
 
-### Potential Features
+#### Option 1: Organization-Level Access
+- Add `Organization` model
+- Teams belong to organizations
+- Users with `MEMBER` role in organization get read-only access to all teams
+- ADMIN users get read-only access to all teams by default
 
-#### Phase 1: Club & Team Import
-- Allow users to link their account to a Nevobo club
-- Import team information (name, league, players if available)
-- Sync team roster from Nevobo
-- Multiple club support (for trainers working at multiple clubs)
+#### Option 2: New MemberRole - VIEWER
+- Add `VIEWER` to `MemberRole` enum
+- `VIEWER` role grants read-only access to team information
+- Can be assigned per-team or organization-wide
 
-#### Phase 2: Schedule Integration
-- Automatically import match schedules
-- Display upcoming matches on dashboard
-- Link training sessions to upcoming matches
-- Show match results and statistics
+#### Option 3: Permission System
+- Implement granular permission system
+- Separate "view" from "edit" permissions
+- Allow flexible permission assignments
 
-#### Phase 3: Player Data
-- Sync player information (if available via API)
-- Track player attendance at matches
-- Link training performance to match performance
+### Priority
+Medium - Not blocking core functionality, but improves usability for multi-team organizations
 
-#### Phase 4: Competition Tracking
-- Display league standings
-- Show team performance metrics
-- Historical data analysis
+### Related Issues
+- Team creators can't view their own created teams if not assigned as COACH/PLAYER
+- Cross-team collaboration is currently impossible
+- Coaches can't reference other teams' training plans
 
-### Implementation Notes
-
-**User Flow:**
-1. User creates account in Volleyball Trainer Platform
-2. User selects "Link Nevobo Club" 
-3. User searches for their club (e.g., "OPM Heerenveen")
-4. System fetches club ID from API
-5. User selects which team(s) they train
-6. Data syncs automatically
-
-**Technical Considerations:**
-- Need to investigate Nevobo API authentication requirements
-- Check API rate limits and usage policies
-- Determine if API is public or requires partnership
-- Consider caching strategy to minimize API calls
-- Handle multiple clubs per user (trainer at multiple locations)
-
-**Data Privacy:**
-- Ensure compliance with GDPR
-- Only sync necessary data
-- Allow users to disconnect integration
-- Clear data retention policies
-
-### Next Steps
-1. Contact Nevobo to inquire about API access
-2. Review API documentation (if available)
-3. Determine authentication method (OAuth, API key, etc.)
-4. Build proof-of-concept integration
-5. Test with OPM Heerenveen data
-
-### References
-- Nevobo API: `https://api.nevobo.nl`
-- Example Club: `https://www.volleybal.nl/competitie/vereniging/ckl6f7m`
-- Mijn Volleybal App: Available on iOS/Android (may provide API insights)
-
----
-
-## Other Future Features
-
-### Enhanced Team Management
-- Add players/staff during team creation ✅ (priority)
-- Player roles and positions
-- Medical information and certifications
-- Emergency contact information
-
-### Training Analytics
-- Track training attendance
-- Exercise effectiveness ratings
-- Player progression tracking
-- Training load management
-
-### Communication Features
-- Team announcements
-- Training reminders
-- Match day communications
-- In-app messaging
-
-### Mobile App
-- Native iOS/Android applications
-- Offline access to training plans
-- Quick exercise lookup
-- Photo/video uploads during training
+### Notes
+- Must ensure no accidental data modification
+- Should work with existing role-based access control
+- Consider privacy implications (some teams may want to be private)
