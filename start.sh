@@ -12,14 +12,17 @@ if [ -z "$DATABASE_URL" ]; then
 fi
 
 echo "📊 Running database migrations..."
+# Generate Prisma client first (in case it wasn't built properly)
+npx prisma generate
+# Run migrations
 npx prisma migrate deploy
 
 echo "🌱 Checking if database is seeded..."
-# Simple check - try to count users, if it fails the table doesn't exist or is empty
+# Try to count users - if table doesn't exist, this will fail and we'll seed
 USER_COUNT=$(npx prisma db execute --stdin <<< "SELECT COUNT(*) as count FROM \"User\";" 2>/dev/null | grep -o '[0-9]\+' | tail -1 || echo "0")
 
 if [ "$USER_COUNT" -eq "0" ]; then
-    echo "🌱 Database is empty, running seed..."
+    echo "🌱 Database is empty or tables don't exist, running seed..."
     npm run db:seed
     echo "✅ Database seeded successfully!"
 else
