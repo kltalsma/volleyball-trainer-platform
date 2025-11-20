@@ -1,7 +1,4 @@
-#!/bin/bash
-
-# Exit on any error
-set -e
+#!/bin/sh
 
 echo "🚀 Starting Volleyball Trainer Platform..."
 
@@ -12,22 +9,30 @@ if [ -z "$DATABASE_URL" ]; then
 fi
 
 echo "📊 Running database migrations..."
+
 # Generate Prisma client first (in case it wasn't built properly)
-npx prisma generate
+echo "🔧 Generating Prisma client..."
+npx prisma generate || {
+    echo "❌ Failed to generate Prisma client"
+    exit 1
+}
+
 # Run migrations
-npx prisma migrate deploy
+echo "🔄 Deploying migrations..."
+npx prisma migrate deploy || {
+    echo "❌ Failed to deploy migrations"
+    exit 1
+}
 
-echo "🌱 Checking if database is seeded..."
-# Try to count users - if table doesn't exist, this will fail and we'll seed
-USER_COUNT=$(npx prisma db execute --stdin <<< "SELECT COUNT(*) as count FROM \"User\";" 2>/dev/null | grep -o '[0-9]\+' | tail -1 || echo "0")
+echo "🌱 Checking if database needs seeding..."
 
-if [ "$USER_COUNT" -eq "0" ]; then
-    echo "🌱 Database is empty or tables don't exist, running seed..."
-    npm run db:seed
-    echo "✅ Database seeded successfully!"
-else
-    echo "✅ Database already contains $USER_COUNT users, skipping seed"
-fi
+# Simplified approach - try to run the seed regardless of current state
+# The seed script itself should be idempotent
+echo "🌱 Running database seed..."
+npm run db:seed || {
+    echo "⚠️  Seeding failed, but continuing with server startup..."
+}
 
+echo "✅ Database initialization complete!"
 echo "🎯 Starting application server..."
 exec node server.js
