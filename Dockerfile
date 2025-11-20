@@ -48,9 +48,9 @@ COPY --from=builder /app/prisma ./prisma
 
 USER nextjs
 
-EXPOSE 3000
+# Railway automatically sets the PORT env var, default to 3000 for local dev
+EXPOSE ${PORT:-3000}
 
-ENV PORT 3000
 ENV HOSTNAME "0.0.0.0"
 
 CMD ["node", "server.js"]
