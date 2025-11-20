@@ -1,20 +1,24 @@
-# Use Node.js 18 LTS
-FROM node:18-alpine AS base
+# Use Node.js 20 LTS (required for Next.js 16+)
+FROM node:20-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Copy package files
+# Copy package files and Prisma config
 COPY package*.json ./
-RUN npm ci
+COPY prisma.config.ts ./
+RUN npm ci --omit=dev
 
 # Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+
+# Install all dependencies for build (including dev dependencies)
+RUN npm ci
 
 # Generate Prisma client with placeholder DATABASE_URL
 ENV DATABASE_URL="postgresql://placeholder:placeholder@placeholder:5432/placeholder"
