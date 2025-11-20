@@ -4,7 +4,7 @@
   "devCommand": "npm run dev",
   "installCommand": "npm ci",
   "framework": "nextjs",
-  "regions": ["ams1"],
+  "regions": ["arn1"],
   "env": {
     "NEXTAUTH_SECRET": "@nextauth-secret",
     "NEXTAUTH_URL": "@nextauth-url",
