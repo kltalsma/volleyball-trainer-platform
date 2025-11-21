@@ -850,6 +850,15 @@ async function main() {
     let workoutCount = 0
     let sessionNumber = 1
     
+    // Get klaas user for workout creation
+    const klaaUser = await prisma.user.findUnique({
+      where: { email: 'kltalsma@gmail.com' }
+    })
+    
+    if (!klaaUser) {
+      throw new Error('Admin user (klaas) not found')
+    }
+    
     for (const team of allTeams) {
       // Find the coach for this team
       const teamWithCoach = await prisma.teamMember.findFirst({
@@ -859,7 +868,7 @@ async function main() {
         },
       })
       
-      const creatorId = teamWithCoach?.userId || klaas.id
+      const creatorId = teamWithCoach?.userId || klaaUser.id
       
       // Generate twice-weekly workouts (Tuesday and Thursday) for each team
       const currentDate = new Date(startDate)
