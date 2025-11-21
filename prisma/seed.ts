@@ -259,6 +259,43 @@ async function main() {
                        Object.keys(xc1Players).length + Object.keys(xc2Players).length
   console.log(`✅ Created ${totalPlayers} players`)
 
+  // Create trainer users
+  console.log('👨‍🏫 Creating trainer users...')
+  const justinLaan = await prisma.user.upsert({
+    where: { email: 'justin.laan@opmheerenveen.nl' },
+    update: { role: UserRole.TRAINER },
+    create: {
+      email: 'justin.laan@opmheerenveen.nl',
+      name: 'Justin Laan',
+      password: hashedPassword,
+      role: UserRole.TRAINER,
+    },
+  })
+
+  const peterBusstra = await prisma.user.upsert({
+    where: { email: 'peter.busstra@opmheerenveen.nl' },
+    update: { role: UserRole.TRAINER },
+    create: {
+      email: 'peter.busstra@opmheerenveen.nl',
+      name: 'Peter Busstra',
+      password: hashedPassword,
+      role: UserRole.TRAINER,
+    },
+  })
+
+  const maartenOpm = await prisma.user.upsert({
+    where: { email: 'maarten.opm@opmheerenveen.nl' },
+    update: { role: UserRole.TRAINER },
+    create: {
+      email: 'maarten.opm@opmheerenveen.nl',
+      name: 'Maarten Opm',
+      password: hashedPassword,
+      role: UserRole.TRAINER,
+    },
+  })
+
+  console.log('✅ Created 3 trainers')
+
   // Create teams
   console.log('🏐 Creating teams...')
   
@@ -835,6 +872,45 @@ async function main() {
 
     const allExercises = await prisma.exercise.findMany()
     console.log(`✅ Created ${allExercises.length} exercises`)
+
+    // Create trainer-specific versions of exercises
+    console.log('👨‍🏫 Creating trainer-specific exercises...')
+    const baseExercises = await prisma.exercise.findMany({
+      where: { creatorId: klaas.id },
+      take: 10 // Get first 10 base exercises
+    })
+
+    const trainers = [
+      { user: justinLaan, name: 'Justin' },
+      { user: peterBusstra, name: 'Peter' },
+      { user: maartenOpm, name: 'Maarten' }
+    ]
+
+    let trainerExerciseCount = 0
+    for (const trainer of trainers) {
+      for (const baseExercise of baseExercises) {
+        await prisma.exercise.create({
+          data: {
+            title: `${baseExercise.title.replace(' (by Klaas)', '')} (by ${trainer.name})`,
+            description: baseExercise.description,
+            duration: baseExercise.duration,
+            difficulty: baseExercise.difficulty,
+            sportId: baseExercise.sportId,
+            categoryId: baseExercise.categoryId,
+            creatorId: trainer.user.id,
+            isPublic: baseExercise.isPublic,
+            techniques: baseExercise.techniques,
+            playerMin: baseExercise.playerMin,
+            playerMax: baseExercise.playerMax,
+            skillLevel: baseExercise.skillLevel,
+            tags: baseExercise.tags,
+            materials: baseExercise.materials || undefined,
+          },
+        })
+        trainerExerciseCount++
+      }
+    }
+    console.log(`✅ Created ${trainerExerciseCount} trainer-specific exercises`)
   }
 
   // Create workouts (training plans) for all teams
