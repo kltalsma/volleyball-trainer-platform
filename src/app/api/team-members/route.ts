@@ -43,7 +43,7 @@ export async function POST(request: Request) {
       )
     }
 
-    // Check if user is ADMIN, team creator, OR a coach/assistant coach of this team
+    // Check if user is ADMIN, team creator, OR already a member of this team
     const currentUser = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { role: true }
@@ -51,11 +51,11 @@ export async function POST(request: Request) {
     const isAdmin = currentUser?.role === 'ADMIN'
     const isCreator = team.creatorId === session.user.id
     const currentUserMember = team.members.find(m => m.userId === session.user.id)
-    const isCoach = currentUserMember && (currentUserMember.role === "COACH" || currentUserMember.role === "ASSISTANT_COACH")
+    const isMember = !!currentUserMember
 
-    if (!isAdmin && !isCreator && !isCoach) {
+    if (!isAdmin && !isCreator && !isMember) {
       return NextResponse.json(
-        { error: "Only admins, the team creator, or coaches can add members to the team" },
+        { error: "Only admins, the team creator, or existing team members can add members to the team" },
         { status: 403 }
       )
     }
@@ -119,10 +119,10 @@ export async function POST(request: Request) {
     })
 
     return NextResponse.json(teamMember, { status: 201 })
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error adding team member:", error)
     return NextResponse.json(
-      { error: "Failed to add team member" },
+      { error: error.message || "Failed to add team member" },
       { status: 500 }
     )
   }
