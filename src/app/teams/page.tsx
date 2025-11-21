@@ -155,10 +155,14 @@ export default function TeamsPage() {
                     <span>👥 {team._count.members} members</span>
                     <span>📋 {team._count.workouts} trainings</span>
                   </div>
-                  {team.members?.[0] && (
+                  {team.members?.[0] ? (
                     <p className="text-xs text-gray-500">
                       <span className="text-gray-400">Coach:</span>{' '}
                       {team.members[0].user.name || team.members[0].user.email}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-gray-400 italic">
+                      No coach assigned
                     </p>
                   )}
                 </div>

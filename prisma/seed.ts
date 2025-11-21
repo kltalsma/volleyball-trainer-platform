@@ -259,16 +259,11 @@ async function main() {
                        Object.keys(xc1Players).length + Object.keys(xc2Players).length
   console.log(`✅ Created ${totalPlayers} players`)
 
-  // Update Luuk de Goede to also have TRAINER role (he's both player and trainer)
-  const luukUser = await prisma.user.findUnique({
-    where: { email: 'luuk.degoede@opmheerenveen.nl' }
+  // Upgrade Luuk de Goede to TRAINER role (he's both player and trainer for D1)
+  await prisma.user.update({
+    where: { email: 'luuk.degoede@opmheerenveen.nl' },
+    data: { role: UserRole.TRAINER },
   })
-  if (luukUser) {
-    await prisma.user.update({
-      where: { email: 'luuk.degoede@opmheerenveen.nl' },
-      data: { role: UserRole.TRAINER },
-    })
-  }
 
   // Create trainer users
   console.log('👨‍🏫 Creating trainer users...')
@@ -306,7 +301,7 @@ async function main() {
   })
 
 
-  console.log('✅ Created 3 trainers + upgraded Luuk de Goede to trainer')
+  console.log('✅ Created 3 trainers + upgraded Luuk to trainer')
 
   // Create teams
   console.log('🏐 Creating teams...')
