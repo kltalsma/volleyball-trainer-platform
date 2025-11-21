@@ -95,24 +95,6 @@ export default async function AdminUsersPage({
     players: users.filter(u => u.role === 'PLAYER').length,
   }
 
-  // Helper function to group team memberships by team
-  const groupTeamsByTeamId = (teams: any[]) => {
-    const grouped = new Map<string, { team: any; roles: string[] }>()
-    
-    teams.forEach((membership) => {
-      const teamId = membership.team.id
-      if (!grouped.has(teamId)) {
-        grouped.set(teamId, {
-          team: membership.team,
-          roles: []
-        })
-      }
-      grouped.get(teamId)!.roles.push(membership.role)
-    })
-    
-    return Array.from(grouped.values())
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-orange-50">
       {/* Header */}

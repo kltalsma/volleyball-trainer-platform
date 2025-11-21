@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import { UserDeleteButton } from "@/components/UserDeleteButton"
+import { TeamRoleManager } from "@/components/TeamRoleManager"
 
 interface Props {
   params: Promise<{
@@ -293,30 +294,7 @@ export default async function EditUserPage({ params }: Props) {
             </div>
 
             {/* Team Memberships */}
-            {user.teams.length > 0 && (
-              <div className="bg-white rounded-xl shadow-sm border p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Team Memberships</h3>
-                
-                <div className="space-y-2">
-                  {user.teams.map((membership) => (
-                    <div key={membership.id} className="flex items-center justify-between p-2 rounded-lg border">
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">{membership.team.name}</p>
-                        <p className="text-xs text-gray-500">{membership.team.sport.name}</p>
-                      </div>
-                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                        membership.role === 'COACH' ? 'bg-blue-100 text-blue-800' :
-                        membership.role === 'TRAINER' ? 'bg-orange-100 text-orange-800' :
-                        membership.role === 'ASSISTANT_COACH' ? 'bg-green-100 text-green-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {membership.role}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            <TeamRoleManager userId={user.id} memberships={user.teams} />
 
             {/* Danger Zone */}
             {id !== session.user.id && (
