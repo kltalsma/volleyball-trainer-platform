@@ -70,7 +70,7 @@ export default async function AdminUsersPage({
       },
       _count: {
         select: {
-          createdTeams: true,
+          teams: true,
           createdExercises: true,
           createdWorkouts: true,
         }
@@ -315,7 +315,7 @@ export default async function AdminUsersPage({
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900 space-y-1">
                         <div className="flex gap-4 text-xs text-gray-500">
-                          <span>🏆 {user._count.createdTeams} teams</span>
+                          <span>🏆 {user._count.teams} teams</span>
                           <span>📋 {user._count.createdWorkouts} workouts</span>
                         </div>
                         <div className="text-xs text-gray-500">
