@@ -439,10 +439,19 @@ async function main() {
   // Add team members
   console.log('👫 Adding team members...')
   
-  // H1 team members - Admin as coach
+  // Get trainer users for team assignments
+  const justinTrainer = await prisma.user.findUnique({ where: { email: 'justin.laan@opmheerenveen.nl' } })
+  const peterTrainer = await prisma.user.findUnique({ where: { email: 'peter.busstra@opmheerenveen.nl' } })
+  const maartenTrainer = await prisma.user.findUnique({ where: { email: 'maarten.opm@opmheerenveen.nl' } })
+
+  if (!justinTrainer || !peterTrainer || !maartenTrainer) {
+    throw new Error('Trainer users not found. Ensure trainers are created before teams.')
+  }
+
+  // H1 team members - Justin as trainer
   await prisma.teamMember.createMany({
     data: [
-      { teamId: h1.id, userId: klaas.id, role: MemberRole.COACH },
+      { teamId: h1.id, userId: justinTrainer.id, role: MemberRole.TRAINER },
       { teamId: h1.id, userId: h1Players.ruurdZwigt.id, role: MemberRole.PLAYER, number: 1, position: 'Opposite' },
       { teamId: h1.id, userId: h1Players.tjeukeHorsten.id, role: MemberRole.PLAYER, number: 2, position: 'Middle Blocker' },
       { teamId: h1.id, userId: h1Players.markRemmelts.id, role: MemberRole.PLAYER, number: 3, position: 'Outside Hitter' },
@@ -460,7 +469,7 @@ async function main() {
   // H2 team members
   await prisma.teamMember.createMany({
     data: [
-      { teamId: h2.id, userId: klaas.id, role: MemberRole.COACH },
+      { teamId: h2.id, userId: peterTrainer.id, role: MemberRole.TRAINER },
       { teamId: h2.id, userId: h2Players.hermanMiedema.id, role: MemberRole.PLAYER, number: 1 },
       { teamId: h2.id, userId: h2Players.jetzeDeJong.id, role: MemberRole.PLAYER, number: 2 },
       { teamId: h2.id, userId: h2Players.sanderStamhuis.id, role: MemberRole.PLAYER, number: 3 },
@@ -477,7 +486,7 @@ async function main() {
   // D1 team members
   await prisma.teamMember.createMany({
     data: [
-      { teamId: d1.id, userId: klaas.id, role: MemberRole.COACH },
+      { teamId: d1.id, userId: justinTrainer.id, role: MemberRole.TRAINER },
       { teamId: d1.id, userId: d1Players.irisDeJonge.id, role: MemberRole.PLAYER, number: 1, position: 'Libero' },
       { teamId: d1.id, userId: d1Players.leonieMendel.id, role: MemberRole.PLAYER, number: 2, position: 'Outside Hitter' },
       { teamId: d1.id, userId: d1Players.marritSikkema.id, role: MemberRole.PLAYER, number: 3, position: 'Setter' },
@@ -496,7 +505,7 @@ async function main() {
   // D2 team members
   await prisma.teamMember.createMany({
     data: [
-      { teamId: d2.id, userId: klaas.id, role: MemberRole.COACH },
+      { teamId: d2.id, userId: peterTrainer.id, role: MemberRole.TRAINER },
       { teamId: d2.id, userId: d2Players.sBusstra.id, role: MemberRole.PLAYER, number: 1, position: 'Setter' },
       { teamId: d2.id, userId: d2Players.marlinJongsma.id, role: MemberRole.PLAYER, number: 2, position: 'Opposite' },
       { teamId: d2.id, userId: d2Players.brendaDeJong.id, role: MemberRole.PLAYER, number: 3, position: 'Middle Blocker' },
@@ -513,7 +522,7 @@ async function main() {
   // D4 team members
   await prisma.teamMember.createMany({
     data: [
-      { teamId: d4.id, userId: klaas.id, role: MemberRole.COACH },
+      { teamId: d4.id, userId: maartenTrainer.id, role: MemberRole.TRAINER },
       { teamId: d4.id, userId: d4Players.levyAtsma.id, role: MemberRole.PLAYER, number: 1, position: 'Setter' },
       { teamId: d4.id, userId: d4Players.benteJonkman.id, role: MemberRole.PLAYER, number: 2, position: 'Middle Blocker' },
       { teamId: d4.id, userId: d4Players.nynkeBosga.id, role: MemberRole.PLAYER, number: 3, position: 'Outside Hitter' },
@@ -529,7 +538,7 @@ async function main() {
   // Special Ladies team members
   await prisma.teamMember.createMany({
     data: [
-      { teamId: specialLadies.id, userId: klaas.id, role: MemberRole.COACH },
+      { teamId: specialLadies.id, userId: maartenTrainer.id, role: MemberRole.TRAINER },
       { teamId: specialLadies.id, userId: specialLadiesPlayers.rixtAnnaBos.id, role: MemberRole.PLAYER, number: 1 },
       { teamId: specialLadies.id, userId: specialLadiesPlayers.marjanYtsma.id, role: MemberRole.PLAYER, number: 2, position: 'Outside Hitter' },
       { teamId: specialLadies.id, userId: specialLadiesPlayers.marjanScheepers.id, role: MemberRole.PLAYER, number: 3, position: 'Outside Hitter' },
@@ -544,7 +553,7 @@ async function main() {
   // MA1 team members
   await prisma.teamMember.createMany({
     data: [
-      { teamId: ma1.id, userId: klaas.id, role: MemberRole.COACH },
+      { teamId: ma1.id, userId: justinTrainer.id, role: MemberRole.TRAINER },
       { teamId: ma1.id, userId: ma1Players.femkeAgricola.id, role: MemberRole.PLAYER, number: 1 },
       { teamId: ma1.id, userId: ma1Players.sarahBevelander.id, role: MemberRole.PLAYER, number: 2 },
       { teamId: ma1.id, userId: ma1Players.yenteBoringa.id, role: MemberRole.PLAYER, number: 3 },
@@ -557,7 +566,7 @@ async function main() {
   // MB1 team members
   await prisma.teamMember.createMany({
     data: [
-      { teamId: mb1.id, userId: klaas.id, role: MemberRole.COACH },
+      { teamId: mb1.id, userId: peterTrainer.id, role: MemberRole.TRAINER },
       { teamId: mb1.id, userId: mbPlayers.tessDeVries.id, role: MemberRole.PLAYER, number: 1 },
       { teamId: mb1.id, userId: mbPlayers.evaHaitsma.id, role: MemberRole.PLAYER, number: 2, position: 'Outside Hitter' },
       { teamId: mb1.id, userId: mbPlayers.pienJansen.id, role: MemberRole.PLAYER, number: 3, position: 'Outside Hitter' },
@@ -573,7 +582,7 @@ async function main() {
   // MB2 team members (same players as MB1)
   await prisma.teamMember.createMany({
     data: [
-      { teamId: mb2.id, userId: klaas.id, role: MemberRole.COACH },
+      { teamId: mb2.id, userId: maartenTrainer.id, role: MemberRole.TRAINER },
       { teamId: mb2.id, userId: mbPlayers.tessDeVries.id, role: MemberRole.PLAYER, number: 1 },
       { teamId: mb2.id, userId: mbPlayers.evaHaitsma.id, role: MemberRole.PLAYER, number: 2, position: 'Outside Hitter' },
       { teamId: mb2.id, userId: mbPlayers.pienJansen.id, role: MemberRole.PLAYER, number: 3, position: 'Outside Hitter' },
@@ -589,7 +598,7 @@ async function main() {
   // XC1 team members
   await prisma.teamMember.createMany({
     data: [
-      { teamId: xc1.id, userId: klaas.id, role: MemberRole.COACH },
+      { teamId: xc1.id, userId: justinTrainer.id, role: MemberRole.TRAINER },
       { teamId: xc1.id, userId: xc1Players.elyseBekkema.id, role: MemberRole.PLAYER, number: 1 },
       { teamId: xc1.id, userId: xc1Players.aaronMuizelaar.id, role: MemberRole.PLAYER, number: 2 },
       { teamId: xc1.id, userId: xc1Players.jorritBrandes.id, role: MemberRole.PLAYER, number: 3 },
@@ -605,7 +614,7 @@ async function main() {
   // XC2 team members
   await prisma.teamMember.createMany({
     data: [
-      { teamId: xc2.id, userId: klaas.id, role: MemberRole.COACH },
+      { teamId: xc2.id, userId: peterTrainer.id, role: MemberRole.TRAINER },
       { teamId: xc2.id, userId: xc2Players.emmaBouma.id, role: MemberRole.PLAYER, number: 1 },
       { teamId: xc2.id, userId: xc2Players.tanischaVisser.id, role: MemberRole.PLAYER, number: 2 },
       { teamId: xc2.id, userId: xc2Players.vereWiersma.id, role: MemberRole.PLAYER, number: 3 },
@@ -965,7 +974,7 @@ async function main() {
       const teamWithCoach = await prisma.teamMember.findFirst({
         where: {
           teamId: team.id,
-          role: MemberRole.COACH,
+          role: MemberRole.TRAINER,
         },
       })
       
