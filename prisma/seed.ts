@@ -266,18 +266,8 @@ async function main() {
   const existingTeamsCount = await prisma.team.count()
   if (existingTeamsCount > 0) {
     console.log(`⏭️  Skipping teams creation - ${existingTeamsCount} teams already exist`)
-    console.log('\n🎉 Seeding completed successfully!')
-    console.log('\n📊 Summary:')
-    console.log(`   • ${await prisma.user.count()} users`)
-    console.log(`   • ${await prisma.team.count()} teams`)
-    console.log(`   • ${await prisma.exercise.count()} exercises`)
-    console.log('\n🔐 Login credentials:')
-    console.log('   Admin: kltalsma@gmail.com / password123')
-    console.log('   All players: <firstname>.<lastname>@opmheerenveen.nl / password123')
-    return
-  }
-  
-  const h1 = await prisma.team.create({
+  } else {
+    const h1 = await prisma.team.create({
     data: {
       name: 'OPM Heerenveen H1',
       description: 'Heren 1 - Promotie klasse',
@@ -589,11 +579,17 @@ async function main() {
       { teamId: xc2.id, userId: xc2Players.mykaVerhallen.id, role: MemberRole.PLAYER, number: 8 },
     ],
   })
+  }
 
   // Create exercises
   console.log('🏋️ Creating exercises...')
   
-  const exercises = await prisma.exercise.createMany({
+  // Check if exercises already exist
+  const existingExercisesCount = await prisma.exercise.count()
+  if (existingExercisesCount > 0) {
+    console.log(`⏭️  Skipping exercises creation - ${existingExercisesCount} exercises already exist`)
+  } else {
+    const exercises = await prisma.exercise.createMany({
     data: [
       // Warm-up exercises
       {
@@ -837,8 +833,9 @@ async function main() {
     ],
   })
 
-  const allExercises = await prisma.exercise.findMany()
-  console.log(`✅ Created ${allExercises.length} exercises`)
+    const allExercises = await prisma.exercise.findMany()
+    console.log(`✅ Created ${allExercises.length} exercises`)
+  }
 
   console.log('\n🎉 Seeding completed successfully!')
   console.log('\n📊 Summary:')
