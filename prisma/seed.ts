@@ -259,6 +259,17 @@ async function main() {
                        Object.keys(xc1Players).length + Object.keys(xc2Players).length
   console.log(`✅ Created ${totalPlayers} players`)
 
+  // Update Luuk de Goede to also have TRAINER role (he's both player and trainer)
+  const luukUser = await prisma.user.findUnique({
+    where: { email: 'luuk.degoede@opmheerenveen.nl' }
+  })
+  if (luukUser) {
+    await prisma.user.update({
+      where: { email: 'luuk.degoede@opmheerenveen.nl' },
+      data: { role: UserRole.TRAINER },
+    })
+  }
+
   // Create trainer users
   console.log('👨‍🏫 Creating trainer users...')
   const justinLaan = await prisma.user.upsert({
@@ -294,7 +305,8 @@ async function main() {
     },
   })
 
-  console.log('✅ Created 3 trainers')
+
+  console.log('✅ Created 3 trainers + upgraded Luuk de Goede to trainer')
 
   // Create teams
   console.log('🏐 Creating teams...')
@@ -443,8 +455,9 @@ async function main() {
   const justinTrainer = await prisma.user.findUnique({ where: { email: 'justin.laan@opmheerenveen.nl' } })
   const peterTrainer = await prisma.user.findUnique({ where: { email: 'peter.busstra@opmheerenveen.nl' } })
   const maartenTrainer = await prisma.user.findUnique({ where: { email: 'maarten.opm@opmheerenveen.nl' } })
+  const luukTrainer = await prisma.user.findUnique({ where: { email: 'luuk.degoede@opmheerenveen.nl' } })
 
-  if (!justinTrainer || !peterTrainer || !maartenTrainer) {
+  if (!justinTrainer || !peterTrainer || !maartenTrainer || !luukTrainer) {
     throw new Error('Trainer users not found. Ensure trainers are created before teams.')
   }
 
@@ -486,7 +499,7 @@ async function main() {
   // D1 team members
   await prisma.teamMember.createMany({
     data: [
-      { teamId: d1.id, userId: justinTrainer.id, role: MemberRole.TRAINER },
+      { teamId: d1.id, userId: luukTrainer.id, role: MemberRole.TRAINER },
       { teamId: d1.id, userId: d1Players.irisDeJonge.id, role: MemberRole.PLAYER, number: 1, position: 'Libero' },
       { teamId: d1.id, userId: d1Players.leonieMendel.id, role: MemberRole.PLAYER, number: 2, position: 'Outside Hitter' },
       { teamId: d1.id, userId: d1Players.marritSikkema.id, role: MemberRole.PLAYER, number: 3, position: 'Setter' },
@@ -505,7 +518,7 @@ async function main() {
   // D2 team members
   await prisma.teamMember.createMany({
     data: [
-      { teamId: d2.id, userId: peterTrainer.id, role: MemberRole.TRAINER },
+      { teamId: d2.id, userId: maartenTrainer.id, role: MemberRole.TRAINER },
       { teamId: d2.id, userId: d2Players.sBusstra.id, role: MemberRole.PLAYER, number: 1, position: 'Setter' },
       { teamId: d2.id, userId: d2Players.marlinJongsma.id, role: MemberRole.PLAYER, number: 2, position: 'Opposite' },
       { teamId: d2.id, userId: d2Players.brendaDeJong.id, role: MemberRole.PLAYER, number: 3, position: 'Middle Blocker' },
