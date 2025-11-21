@@ -1,7 +1,6 @@
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
-import UserDeleteButton from "@/components/UserDeleteButton"
 
 export default async function AdminUsersPage() {
   const session = await auth()
@@ -271,12 +270,6 @@ export default async function AdminUsersPage() {
                         >
                           Edit
                         </a>
-                        <UserDeleteButton
-                          userId={user.id}
-                          userName={user.name}
-                          userEmail={user.email}
-                          currentUserId={session.user.id}
-                        />
                       </div>
                     </td>
                   </tr>
