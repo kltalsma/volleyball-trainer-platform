@@ -294,7 +294,12 @@ export default async function EditUserPage({ params }: Props) {
             </div>
 
             {/* Team Memberships */}
-            <TeamRoleManager userId={user.id} memberships={user.teams} />
+            <TeamRoleManager 
+              userId={user.id} 
+              userEmail={user.email}
+              userName={user.name}
+              memberships={user.teams} 
+            />
 
             {/* Danger Zone */}
             {id !== session.user.id && (

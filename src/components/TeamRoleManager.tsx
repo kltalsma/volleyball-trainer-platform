@@ -15,12 +15,14 @@ interface TeamMembership {
 
 interface TeamRoleManagerProps {
   userId: string
+  userEmail: string
+  userName: string | null
   memberships: TeamMembership[]
 }
 
 const AVAILABLE_ROLES = ['PLAYER', 'COACH', 'TRAINER', 'ASSISTANT_COACH'] as const
 
-export function TeamRoleManager({ userId, memberships }: TeamRoleManagerProps) {
+export function TeamRoleManager({ userId, userEmail, userName, memberships }: TeamRoleManagerProps) {
   const router = useRouter()
   const [loading, setLoading] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -51,7 +53,8 @@ export function TeamRoleManager({ userId, memberships }: TeamRoleManagerProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           teamId,
-          userId,
+          email: userEmail,
+          name: userName || userEmail,
           role
         })
       })

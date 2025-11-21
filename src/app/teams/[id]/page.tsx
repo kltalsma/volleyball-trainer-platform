@@ -337,34 +337,53 @@ export default function TeamDetailPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {team.members.map((member) => (
-                  <tr key={member.id}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        {member.user.name || member.user.email}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        member.role === 'COACH' ? 'bg-purple-100 text-purple-700' :
-                        member.role === 'TRAINER' ? 'bg-orange-100 text-orange-700' :
-                        member.role === 'ASSISTANT_COACH' ? 'bg-blue-100 text-blue-700' :
-                        'bg-gray-100 text-gray-700'
-                      }`}>
-                        {member.role.replace('_', ' ')}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {member.number || '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {member.position || '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {format(new Date(member.joinedAt), "PP")}
-                    </td>
-                  </tr>
-                ))}
+                {(() => {
+                  // Group members by userId
+                  const membersByUser = new Map<string, Member[]>()
+                  team.members.forEach(member => {
+                    const userId = member.user.id
+                    if (!membersByUser.has(userId)) {
+                      membersByUser.set(userId, [])
+                    }
+                    membersByUser.get(userId)!.push(member)
+                  })
+
+                  return Array.from(membersByUser.values()).map((userMembers) => {
+                    const firstMember = userMembers[0]
+                    return (
+                      <tr key={firstMember.user.id}>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">
+                            {firstMember.user.name || firstMember.user.email}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex flex-wrap gap-1">
+                            {userMembers.map((member) => (
+                              <span key={member.id} className={`px-2 py-1 text-xs rounded-full ${
+                                member.role === 'COACH' ? 'bg-purple-100 text-purple-700' :
+                                member.role === 'TRAINER' ? 'bg-orange-100 text-orange-700' :
+                                member.role === 'ASSISTANT_COACH' ? 'bg-blue-100 text-blue-700' :
+                                'bg-gray-100 text-gray-700'
+                              }`}>
+                                {member.role.replace('_', ' ')}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {firstMember.number || '-'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {firstMember.position || '-'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {format(new Date(firstMember.joinedAt), "PP")}
+                        </td>
+                      </tr>
+                    )
+                  })
+                })()}
               </tbody>
             </table>
           </div>

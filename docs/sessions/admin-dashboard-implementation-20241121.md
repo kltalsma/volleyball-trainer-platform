@@ -115,5 +115,74 @@ Successfully completed the admin dashboard implementation from where we left off
 The volleyball trainer platform now has a complete admin dashboard system that allows administrators to effectively manage users and oversee platform activity.
 
 ---
+
+## Continuation Session - Multi-Role Member Display Fix
+**Time**: Later same day
+
+### Issue Discovered ❌
+After implementing multi-role support per team, team pages were showing duplicate entries for users with multiple roles (e.g., Maarten appeared twice as COACH and TRAINER separately).
+
+### Pages Affected
+1. **Team Detail Page**: `/teams/[id]` - Member table showing duplicates
+2. **Team Edit Page**: `/teams/[id]/edit` - Member list showing duplicates
+
+### ✅ Solution Implemented
+
+**Both pages now group members by userId:**
+- Display user once with all their roles as badges
+- Team detail page: Multiple role badges in table cell
+- Team edit page: Multiple role badges + individual "Remove ROLE" buttons for multi-role users
+- Edit functionality preserved for single-role members
+- Proper handling of number/position fields (taken from first membership)
+
+**Key Changes:**
+```typescript
+// Group members by userId
+const membersByUser = new Map<string, Member[]>()
+members.forEach(member => {
+  const userId = member.user.id
+  if (!membersByUser.has(userId)) {
+    membersByUser.set(userId, [])
+  }
+  membersByUser.get(userId)!.push(member)
+})
+```
+
+**Files Modified:**
+- `src/app/teams/[id]/page.tsx` - Team detail page member table
+- `src/app/teams/[id]/edit/page.tsx` - Team edit page member list
+
+**Branch**: `fix/team-pages-duplicate-members`
+**Commits**: 
+- `d8f6112` - "Fix duplicate members in team detail and edit pages"
+- `759d992` - "Fix TeamRoleManager to pass user email and name when adding roles"
+
+### Visual Improvements
+- **Before**: "Maarten Opm COACH" and "Maarten Opm TRAINER" as separate rows
+- **After**: "Maarten Opm COACH TRAINER" as single row with multiple badges
+- Role-specific remove buttons for multi-role users
+- Cleaner, more intuitive UI
+
+### Additional Fix - Add Role Functionality ✅
+
+**Problem**: TeamRoleManager component couldn't add new roles to existing users
+- Error: "teamId, email, and name are required"
+- Component was only sending `userId` and `role`
+
+**Solution**:
+- Updated `TeamRoleManager` to accept `userEmail` and `userName` props
+- Modified API call to include all required fields: `teamId`, `email`, `name`, `role`
+- Updated admin user edit page to pass these props
+
+**Files Modified**:
+- `src/components/TeamRoleManager.tsx` - Added props and updated API call
+- `src/app/admin/users/[id]/edit/page.tsx` - Pass user email and name
+
+**Result**: Users can now add additional roles to existing team members via:
+- Admin user edit page (`/admin/users/[id]/edit`)
+- Dropdown shows available roles not yet assigned
+- Properly creates new TeamMember record with correct role
+
+---
 **Session End**: All tasks completed successfully ✅
 **Status**: Ready for testing and deployment
