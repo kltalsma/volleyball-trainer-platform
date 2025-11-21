@@ -837,21 +837,33 @@ async function main() {
     console.log(`✅ Created ${allExercises.length} exercises`)
   }
 
-  // Create training sessions for all teams
-  const existingSessionsCount = await prisma.trainingSession.count()
+  // Create workouts (training plans) for all teams
+  const existingWorkoutCount = await prisma.workout.count()
   
-  if (existingSessionsCount === 0) {
-    console.log('📅 Creating training sessions...')
+  if (existingWorkoutCount === 0) {
+    console.log('📅 Creating training workouts...')
     
     const allTeams = await prisma.team.findMany()
     const startDate = new Date('2025-01-07T18:00:00') // Tuesday, Jan 7, 2025
     const endDate = new Date('2025-05-29T19:30:00')   // Thursday, May 29, 2025
     
-    let sessionCount = 0
+    let workoutCount = 0
+    let sessionNumber = 1
     
     for (const team of allTeams) {
-      // Generate twice-weekly sessions (Tuesday and Thursday) for each team
+      // Find the coach for this team
+      const teamWithCoach = await prisma.teamMember.findFirst({
+        where: {
+          teamId: team.id,
+          role: MemberRole.COACH,
+        },
+      })
+      
+      const creatorId = teamWithCoach?.userId || klaas.id
+      
+      // Generate twice-weekly workouts (Tuesday and Thursday) for each team
       const currentDate = new Date(startDate)
+      let teamSessionNumber = 1
       
       while (currentDate <= endDate) {
         const dayOfWeek = currentDate.getDay()
@@ -859,18 +871,23 @@ async function main() {
         // Tuesday (2) or Thursday (4)
         if (dayOfWeek === 2 || dayOfWeek === 4) {
           const sessionStart = new Date(currentDate)
+          const sessionEnd = new Date(currentDate)
+          sessionEnd.setMinutes(sessionEnd.getMinutes() + 90)
           
-          await prisma.trainingSession.create({
+          await prisma.workout.create({
             data: {
               teamId: team.id,
-              title: `${dayOfWeek === 2 ? 'Tuesday' : 'Thursday'} Training Session`,
-              description: `Regular training session for ${team.name}`,
-              scheduledAt: sessionStart,
-              duration: 90, // 90 minutes
-              status: SessionStatus.COMPLETED,
+              creatorId: creatorId,
+              title: `${team.name} - ${dayOfWeek === 2 ? 'Tuesday' : 'Thursday'} Training #${teamSessionNumber}`,
+              description: `Regular ${dayOfWeek === 2 ? 'Tuesday' : 'Thursday'} training session focusing on technique and game play`,
+              totalDuration: 90,
+              startTime: sessionStart,
+              endTime: sessionEnd,
+              isPublic: false,
             },
           })
-          sessionCount++
+          workoutCount++
+          teamSessionNumber++
         }
         
         // Move to next day
@@ -878,9 +895,9 @@ async function main() {
       }
     }
     
-    console.log(`✅ Created ${sessionCount} training sessions (${Math.floor(sessionCount / allTeams.length)} per team)`)
+    console.log(`✅ Created ${workoutCount} training workouts (${Math.floor(workoutCount / allTeams.length)} per team)`)
   } else {
-    console.log(`⏭️  Skipping training sessions - ${existingSessionsCount} sessions already exist`)
+    console.log(`⏭️  Skipping training workouts - ${existingWorkoutCount} workouts already exist`)
   }
 
   console.log('\n🎉 Seeding completed successfully!')
@@ -888,7 +905,7 @@ async function main() {
   console.log(`   • ${await prisma.user.count()} users`)
   console.log(`   • ${await prisma.team.count()} teams`)
   console.log(`   • ${await prisma.exercise.count()} exercises`)
-  console.log(`   • ${await prisma.trainingSession.count()} training sessions`)
+  console.log(`   • ${await prisma.workout.count()} training workouts`)
   console.log('\n🔐 Login credentials:')
   console.log('   Admin: kltalsma@gmail.com / password123')
   console.log('   All players: <firstname>.<lastname>@opmheerenveen.nl / password123')
