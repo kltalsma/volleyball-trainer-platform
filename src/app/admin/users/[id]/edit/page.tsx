@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
+import { UserDeleteButton } from "@/components/UserDeleteButton"
 
 interface Props {
   params: Promise<{
@@ -325,19 +326,10 @@ export default async function EditUserPage({ params }: Props) {
                   This action cannot be undone. The user will be permanently deleted.
                 </p>
                 
-                <form action={handleDeleteUser}>
-                  <button
-                    type="submit"
-                    onClick={(e) => {
-                      if (!confirm(`Are you sure you want to delete user "${user.name || user.email}"? This action cannot be undone.`)) {
-                        e.preventDefault()
-                      }
-                    }}
-                    className="w-full px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
-                  >
-                    Delete User
-                  </button>
-                </form>
+                <UserDeleteButton 
+                  userName={user.name || user.email}
+                  deleteAction={handleDeleteUser}
+                />
               </div>
             )}
           </div>
