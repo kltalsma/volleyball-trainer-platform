@@ -7,6 +7,7 @@ interface SearchParams {
   role?: string
   search?: string
   teamId?: string
+  page?: string
 }
 
 export default async function AdminUsersPage({
@@ -53,7 +54,19 @@ export default async function AdminUsersPage({
     }
   }
 
-  // Fetch all users with their team memberships
+  // Pagination
+  const page = parseInt(params.page || '1')
+  const pageSize = 25
+  const skip = (page - 1) * pageSize
+
+  // Get total count for pagination
+  const totalUsers = await prisma.user.count({
+    where: Object.keys(whereConditions).length > 0 ? whereConditions : undefined,
+  })
+
+  const totalPages = Math.ceil(totalUsers / pageSize)
+
+  // Fetch paginated users with their team memberships
   const users = await prisma.user.findMany({
     where: Object.keys(whereConditions).length > 0 ? whereConditions : undefined,
     include: {
@@ -76,7 +89,9 @@ export default async function AdminUsersPage({
         }
       }
     },
-    orderBy: { createdAt: 'desc' }
+    orderBy: { createdAt: 'desc' },
+    skip,
+    take: pageSize
   })
 
   // Fetch all teams for the filter dropdown
@@ -363,6 +378,79 @@ export default async function AdminUsersPage({
                   </svg>
                   Add User
                 </a>
+              </div>
+            </div>
+          )}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="px-6 py-4 border-t flex items-center justify-between">
+              <div className="text-sm text-gray-700">
+                Showing <span className="font-medium">{skip + 1}</span> to <span className="font-medium">{Math.min(skip + pageSize, totalUsers)}</span> of{' '}
+                <span className="font-medium">{totalUsers}</span> users
+              </div>
+              <div className="flex gap-2">
+                {page > 1 && (
+                  <a
+                    href={`/admin/users?${new URLSearchParams({
+                      ...(params.role && { role: params.role }),
+                      ...(params.search && { search: params.search }),
+                      ...(params.teamId && { teamId: params.teamId }),
+                      page: (page - 1).toString()
+                    }).toString()}`}
+                    className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    ← Previous
+                  </a>
+                )}
+                
+                {/* Page numbers */}
+                <div className="flex gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => {
+                    // Show first page, last page, current page, and pages around current
+                    if (
+                      pageNum === 1 ||
+                      pageNum === totalPages ||
+                      (pageNum >= page - 1 && pageNum <= page + 1)
+                    ) {
+                      return (
+                        <a
+                          key={pageNum}
+                          href={`/admin/users?${new URLSearchParams({
+                            ...(params.role && { role: params.role }),
+                            ...(params.search && { search: params.search }),
+                            ...(params.teamId && { teamId: params.teamId }),
+                            page: pageNum.toString()
+                          }).toString()}`}
+                          className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                            pageNum === page
+                              ? 'bg-blue-600 text-white'
+                              : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          {pageNum}
+                        </a>
+                      )
+                    } else if (pageNum === page - 2 || pageNum === page + 2) {
+                      return <span key={pageNum} className="px-2 py-2 text-gray-500">...</span>
+                    }
+                    return null
+                  })}
+                </div>
+
+                {page < totalPages && (
+                  <a
+                    href={`/admin/users?${new URLSearchParams({
+                      ...(params.role && { role: params.role }),
+                      ...(params.search && { search: params.search }),
+                      ...(params.teamId && { teamId: params.teamId }),
+                      page: (page + 1).toString()
+                    }).toString()}`}
+                    className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Next →
+                  </a>
+                )}
               </div>
             </div>
           )}
