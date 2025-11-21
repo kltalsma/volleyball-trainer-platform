@@ -89,11 +89,13 @@ export default async function EditUserPage({ params }: Props) {
           name: name || null
         }
       })
-      
-      redirect("/admin/users?success=User updated successfully")
     } catch (error) {
-      throw new Error("Failed to update user")
+      console.error("Error updating user:", error)
+      throw new Error(`Failed to update user: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
+    
+    // Redirect after successful update (outside try-catch so redirect errors aren't caught)
+    redirect("/admin/users?success=User updated successfully")
   }
 
   const handleDeleteUser = async () => {
@@ -108,11 +110,13 @@ export default async function EditUserPage({ params }: Props) {
       await prisma.user.delete({
         where: { id: id }
       })
-      
-      redirect("/admin/users?success=User deleted successfully")
     } catch (error) {
-      throw new Error("Failed to delete user")
+      console.error("Error deleting user:", error)
+      throw new Error(`Failed to delete user: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
+    
+    // Redirect after successful delete (outside try-catch so redirect errors aren't caught)
+    redirect("/admin/users?success=User deleted successfully")
   }
 
   return (
