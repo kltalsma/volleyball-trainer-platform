@@ -262,6 +262,21 @@ async function main() {
   // Create teams
   console.log('🏐 Creating teams...')
   
+  // Check if teams already exist
+  const existingTeamsCount = await prisma.team.count()
+  if (existingTeamsCount > 0) {
+    console.log(`⏭️  Skipping teams creation - ${existingTeamsCount} teams already exist`)
+    console.log('\n🎉 Seeding completed successfully!')
+    console.log('\n📊 Summary:')
+    console.log(`   • ${await prisma.user.count()} users`)
+    console.log(`   • ${await prisma.team.count()} teams`)
+    console.log(`   • ${await prisma.exercise.count()} exercises`)
+    console.log('\n🔐 Login credentials:')
+    console.log('   Admin: kltalsma@gmail.com / password123')
+    console.log('   All players: <firstname>.<lastname>@opmheerenveen.nl / password123')
+    return
+  }
+  
   const h1 = await prisma.team.create({
     data: {
       name: 'OPM Heerenveen H1',
