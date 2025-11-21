@@ -872,45 +872,70 @@ async function main() {
 
     const allExercises = await prisma.exercise.findMany()
     console.log(`✅ Created ${allExercises.length} exercises`)
+  }
 
-    // Create trainer-specific versions of exercises
-    console.log('👨‍🏫 Creating trainer-specific exercises...')
-    const baseExercises = await prisma.exercise.findMany({
-      where: { creatorId: klaas.id },
-      take: 10 // Get first 10 base exercises
-    })
-
-    const trainers = [
-      { user: justinLaan, name: 'Justin' },
-      { user: peterBusstra, name: 'Peter' },
-      { user: maartenOpm, name: 'Maarten' }
-    ]
-
-    let trainerExerciseCount = 0
-    for (const trainer of trainers) {
-      for (const baseExercise of baseExercises) {
-        await prisma.exercise.create({
-          data: {
-            title: `${baseExercise.title.replace(' (by Klaas)', '')} (by ${trainer.name})`,
-            description: baseExercise.description,
-            duration: baseExercise.duration,
-            difficulty: baseExercise.difficulty,
-            sportId: baseExercise.sportId,
-            categoryId: baseExercise.categoryId,
-            creatorId: trainer.user.id,
-            isPublic: baseExercise.isPublic,
-            techniques: baseExercise.techniques,
-            playerMin: baseExercise.playerMin,
-            playerMax: baseExercise.playerMax,
-            skillLevel: baseExercise.skillLevel,
-            tags: baseExercise.tags,
-            materials: baseExercise.materials || undefined,
-          },
-        })
-        trainerExerciseCount++
-      }
+  // Create trainer-specific versions of exercises (separate check)
+  const trainerExerciseCount = await prisma.exercise.count({
+    where: {
+      OR: [
+        { title: { contains: '(by Justin)' } },
+        { title: { contains: '(by Peter)' } },
+        { title: { contains: '(by Maarten)' } },
+      ]
     }
-    console.log(`✅ Created ${trainerExerciseCount} trainer-specific exercises`)
+  })
+
+  if (trainerExerciseCount === 0) {
+    console.log('👨‍🏫 Creating trainer-specific exercises...')
+    
+    // Get trainer users
+    const klaaUser = await prisma.user.findUnique({ where: { email: 'kltalsma@gmail.com' } })
+    const justin = await prisma.user.findUnique({ where: { email: 'justin.laan@opmheerenveen.nl' } })
+    const peter = await prisma.user.findUnique({ where: { email: 'peter.busstra@opmheerenveen.nl' } })
+    const maarten = await prisma.user.findUnique({ where: { email: 'maarten.opm@opmheerenveen.nl' } })
+
+    if (!klaaUser || !justin || !peter || !maarten) {
+      console.log('⚠️  Skipping trainer exercises - required users not found')
+    } else {
+      const baseExercises = await prisma.exercise.findMany({
+        where: { creatorId: klaaUser.id },
+        take: 10 // Get first 10 base exercises
+      })
+
+      const trainers = [
+        { user: justin, name: 'Justin' },
+        { user: peter, name: 'Peter' },
+        { user: maarten, name: 'Maarten' }
+      ]
+
+      let createdCount = 0
+      for (const trainer of trainers) {
+        for (const baseExercise of baseExercises) {
+          await prisma.exercise.create({
+            data: {
+              title: `${baseExercise.title} (by ${trainer.name})`,
+              description: baseExercise.description,
+              duration: baseExercise.duration,
+              difficulty: baseExercise.difficulty,
+              sportId: baseExercise.sportId,
+              categoryId: baseExercise.categoryId,
+              creatorId: trainer.user.id,
+              isPublic: baseExercise.isPublic,
+              techniques: baseExercise.techniques,
+              playerMin: baseExercise.playerMin,
+              playerMax: baseExercise.playerMax,
+              skillLevel: baseExercise.skillLevel,
+              tags: baseExercise.tags,
+              materials: baseExercise.materials || undefined,
+            },
+          })
+          createdCount++
+        }
+      }
+      console.log(`✅ Created ${createdCount} trainer-specific exercises`)
+    }
+  } else {
+    console.log(`⏭️  Skipping trainer exercises - ${trainerExerciseCount} already exist`)
   }
 
   // Create workouts (training plans) for all teams
