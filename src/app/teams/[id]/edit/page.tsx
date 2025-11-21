@@ -779,135 +779,172 @@ export default function EditTeamPage({ params }: { params: Promise<{ id: string 
               </div>
             ) : (
               <div className="space-y-3">
-                {members.map((member) => (
-                  <div
-                    key={member.id}
-                    className="p-4 bg-gray-50 rounded-lg border hover:border-blue-300 transition-colors"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="font-medium text-gray-900">
-                            {member.user.name || member.user.email}
-                          </h3>
-                          <span className={`px-2 py-1 text-xs rounded-full ${
-                            member.role === 'COACH' ? 'bg-purple-100 text-purple-700' :
-                            member.role === 'TRAINER' ? 'bg-orange-100 text-orange-700' :
-                            member.role === 'ASSISTANT_COACH' ? 'bg-blue-100 text-blue-700' :
-                            member.role === 'PLAYER' ? 'bg-green-100 text-green-700' :
-                            'bg-gray-100 text-gray-700'
-                          }`}>
-                            {member.role.replace('_', ' ')}
-                          </span>
-                          {member.number && (
-                            <span className="px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded-full">
-                              #{member.number}
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          <p>{member.user.email}</p>
-                          {member.position && <p>Position: {member.position}</p>}
-                        </div>
-                      </div>
+                {(() => {
+                  // Group members by userId
+                  const membersByUser = new Map<string, Member[]>()
+                  members.forEach(member => {
+                    const userId = member.user.id
+                    if (!membersByUser.has(userId)) {
+                      membersByUser.set(userId, [])
+                    }
+                    membersByUser.get(userId)!.push(member)
+                  })
 
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setEditingMember(editingMember === member.id ? null : member.id)}
-                          className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                        >
-                          {editingMember === member.id ? "Cancel" : "Edit"}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteMember(member.id)}
-                          className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Edit Member Form */}
-                    {editingMember === member.id && (
-                      <div className="mt-4 pt-4 border-t space-y-3">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                          <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1">
-                              Role
-                            </label>
-                            <select
-                              value={memberEdits[member.id]?.role ?? member.role}
-                              onChange={(e) => updateMemberEdit(member.id, 'role', e.target.value)}
-                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
-                            >
-                              <option value="PLAYER">Player</option>
-                              <option value="COACH">Coach</option>
-                              <option value="TRAINER">Trainer</option>
-                              <option value="ASSISTANT_COACH">Assistant Coach</option>
-                              <option value="PARENT">Parent</option>
-                              <option value="VOLUNTEER">Volunteer</option>
-                            </select>
+                  return Array.from(membersByUser.values()).map((userMembers) => {
+                    const firstMember = userMembers[0]
+                    return (
+                      <div
+                        key={firstMember.user.id}
+                        className="p-4 bg-gray-50 rounded-lg border hover:border-blue-300 transition-colors"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <h3 className="font-medium text-gray-900">
+                                {firstMember.user.name || firstMember.user.email}
+                              </h3>
+                              {/* Show all roles as badges */}
+                              {userMembers.map((member) => (
+                                <span key={member.id} className={`px-2 py-1 text-xs rounded-full ${
+                                  member.role === 'COACH' ? 'bg-purple-100 text-purple-700' :
+                                  member.role === 'TRAINER' ? 'bg-orange-100 text-orange-700' :
+                                  member.role === 'ASSISTANT_COACH' ? 'bg-blue-100 text-blue-700' :
+                                  member.role === 'PLAYER' ? 'bg-green-100 text-green-700' :
+                                  'bg-gray-100 text-gray-700'
+                                }`}>
+                                  {member.role.replace('_', ' ')}
+                                </span>
+                              ))}
+                              {firstMember.number && (
+                                <span className="px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded-full">
+                                  #{firstMember.number}
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              <p>{firstMember.user.email}</p>
+                              {firstMember.position && <p>Position: {firstMember.position}</p>}
+                            </div>
                           </div>
 
-                          <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1">
-                              Number
-                            </label>
-                            <input
-                              type="number"
-                              value={(memberEdits[member.id]?.number !== undefined ? memberEdits[member.id]?.number : member.number) ?? ""}
-                              onChange={(e) => {
-                                const value = e.target.value
-                                updateMemberEdit(member.id, 'number', value ? parseInt(value, 10) : null)
-                              }}
-                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
-                              placeholder="Jersey #"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1">
-                              Position
-                            </label>
-                            <input
-                              type="text"
-                              value={memberEdits[member.id]?.position ?? member.position ?? ""}
-                              onChange={(e) => updateMemberEdit(member.id, 'position', e.target.value || null)}
-                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
-                              placeholder="Position"
-                            />
+                          <div className="flex gap-2">
+                            {/* For multi-role users, show individual remove buttons */}
+                            {userMembers.length > 1 ? (
+                              <div className="flex flex-col gap-1">
+                                {userMembers.map((member) => (
+                                  <button
+                                    key={member.id}
+                                    type="button"
+                                    onClick={() => handleDeleteMember(member.id)}
+                                    className="px-3 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 transition-colors whitespace-nowrap"
+                                    title={`Remove ${member.role} role`}
+                                  >
+                                    Remove {member.role}
+                                  </button>
+                                ))}
+                              </div>
+                            ) : (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingMember(editingMember === firstMember.id ? null : firstMember.id)}
+                                  className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                                >
+                                  {editingMember === firstMember.id ? "Cancel" : "Edit"}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteMember(firstMember.id)}
+                                  className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                                >
+                                  Remove
+                                </button>
+                              </>
+                            )}
                           </div>
                         </div>
 
-                        <div className="flex gap-2 pt-2">
-                          <button
-                            type="button"
-                            onClick={() => handleUpdateMember(member.id)}
-                            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm font-medium"
-                          >
-                            Save Changes
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditingMember(null)
-                              setMemberEdits(prev => {
-                                const newEdits = { ...prev }
-                                delete newEdits[member.id]
-                                return newEdits
-                              })
-                            }}
-                            className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors text-sm font-medium"
-                          >
-                            Cancel
-                          </button>
-                        </div>
+                        {/* Edit Member Form - Only show for single-role members */}
+                        {editingMember === firstMember.id && userMembers.length === 1 && (
+                          <div className="mt-4 pt-4 border-t space-y-3">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">
+                                  Role
+                                </label>
+                                <select
+                                  value={memberEdits[firstMember.id]?.role ?? firstMember.role}
+                                  onChange={(e) => updateMemberEdit(firstMember.id, 'role', e.target.value)}
+                                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
+                                >
+                                  <option value="PLAYER">Player</option>
+                                  <option value="COACH">Coach</option>
+                                  <option value="TRAINER">Trainer</option>
+                                  <option value="ASSISTANT_COACH">Assistant Coach</option>
+                                  <option value="PARENT">Parent</option>
+                                  <option value="VOLUNTEER">Volunteer</option>
+                                </select>
+                              </div>
+
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">
+                                  Number
+                                </label>
+                                <input
+                                  type="number"
+                                  value={(memberEdits[firstMember.id]?.number !== undefined ? memberEdits[firstMember.id]?.number : firstMember.number) ?? ""}
+                                  onChange={(e) => {
+                                    const value = e.target.value
+                                    updateMemberEdit(firstMember.id, 'number', value ? parseInt(value, 10) : null)
+                                  }}
+                                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
+                                  placeholder="Jersey #"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">
+                                  Position
+                                </label>
+                                <input
+                                  type="text"
+                                  value={memberEdits[firstMember.id]?.position ?? firstMember.position ?? ""}
+                                  onChange={(e) => updateMemberEdit(firstMember.id, 'position', e.target.value || null)}
+                                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
+                                  placeholder="Position"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="flex gap-2 pt-2">
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateMember(firstMember.id)}
+                                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm font-medium"
+                              >
+                                Save Changes
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingMember(null)
+                                  setMemberEdits(prev => {
+                                    const newEdits = { ...prev }
+                                    delete newEdits[firstMember.id]
+                                    return newEdits
+                                  })
+                                }}
+                                className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors text-sm font-medium"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                ))}
+                    )
+                  })
+                })()}
               </div>
             )}
           </div>
