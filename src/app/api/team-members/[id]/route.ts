@@ -17,6 +17,11 @@ export async function PATCH(
 
     const body = await request.json()
     const { role, number, position } = body
+    
+    console.log('=== TEAM MEMBER UPDATE DEBUG ===')
+    console.log('Member ID:', id)
+    console.log('Update data:', { role, number, position })
+    console.log('Current user ID:', session.user.id)
 
     // Get the team member and verify permissions
     const teamMember = await prisma.teamMember.findUnique({
@@ -39,11 +44,19 @@ export async function PATCH(
     })
 
     if (!teamMember) {
+      console.log('❌ Team member not found with ID:', id)
       return NextResponse.json(
         { error: "Team member not found" },
         { status: 404 }
       )
     }
+    
+    console.log('✅ Found team member:', {
+      id: teamMember.id,
+      currentRole: teamMember.role,
+      userId: teamMember.userId,
+      teamId: teamMember.team.id
+    })
 
     // Check if user is ADMIN, team creator, OR a coach/assistant coach of this team
     const currentUser = await prisma.user.findUnique({
@@ -53,27 +66,36 @@ export async function PATCH(
     const isAdmin = currentUser?.role === 'ADMIN'
     const isCreator = teamMember.team.creatorId === session.user.id
     const currentUserMember = teamMember.team.members.find(m => m.userId === session.user.id)
-    const isCoach = currentUserMember && (currentUserMember.role === "COACH" || currentUserMember.role === "ASSISTANT_COACH")
+    const isCoach = currentUserMember && (currentUserMember.role === "COACH" || currentUserMember.role === "TRAINER" || currentUserMember.role === "ASSISTANT_COACH")
+
+    console.log('🔐 Permission check:', {
+      isAdmin,
+      isCreator,
+      currentUserMember: currentUserMember ? { role: currentUserMember.role } : null,
+      isCoach,
+      hasPermission: isAdmin || isCreator || isCoach
+    })
 
     if (!isAdmin && !isCreator && !isCoach) {
+      console.log('❌ Permission denied')
       return NextResponse.json(
         { error: "Only admins, the team creator, or coaches can update team members" },
         { status: 403 }
       )
     }
 
-    // If changing someone's role away from COACH/ASSISTANT_COACH, ensure there's at least one coach remaining
-    if (role && (role !== "COACH" && role !== "ASSISTANT_COACH")) {
+    // If changing someone's role away from leadership roles, ensure there's at least one leader remaining
+    if (role && (role !== "COACH" && role !== "TRAINER" && role !== "ASSISTANT_COACH")) {
       const currentRole = teamMember.role
-      if (currentRole === "COACH" || currentRole === "ASSISTANT_COACH") {
-        // Count how many coaches will remain after this change
-        const coachCount = teamMember.team.members.filter(m => 
-          m.role === "COACH" || m.role === "ASSISTANT_COACH"
+      if (currentRole === "COACH" || currentRole === "TRAINER" || currentRole === "ASSISTANT_COACH") {
+        // Count how many leaders will remain after this change
+        const leaderCount = teamMember.team.members.filter(m => 
+          m.role === "COACH" || m.role === "TRAINER" || m.role === "ASSISTANT_COACH"
         ).length
         
-        if (coachCount <= 1) {
+        if (leaderCount <= 1) {
           return NextResponse.json(
-            { error: "Cannot remove the last coach from the team. Please assign another coach first." },
+            { error: "Cannot remove the last coach/trainer from the team. Please assign another leader first." },
             { status: 400 }
           )
         }
@@ -81,6 +103,8 @@ export async function PATCH(
     }
 
     // Update member
+    console.log('Updating member with data:', { role, number, position })
+    
     const updatedMember = await prisma.teamMember.update({
       where: { id },
       data: {
@@ -101,9 +125,33 @@ export async function PATCH(
 
     return NextResponse.json(updatedMember)
   } catch (error) {
-    console.error("Error updating team member:", error)
+    console.error("❌ Error updating team member:", error)
+    
+    // More specific error handling
+    if (error instanceof Error) {
+      console.error("Error details:", {
+        message: error.message,
+        stack: error.stack?.substring(0, 500)
+      })
+      
+      if (error.message.includes('Invalid enum value') || error.message.includes('invalid input value for enum')) {
+        return NextResponse.json(
+          { error: "Invalid role selected. The TRAINER role may not be fully activated yet." },
+          { status: 400 }
+        )
+      }
+      
+      // Check for permission-related errors
+      if (error.message.includes('Unique constraint') || error.message.includes('foreign key')) {
+        return NextResponse.json(
+          { error: "Database constraint violation. Please try again." },
+          { status: 400 }
+        )
+      }
+    }
+    
     return NextResponse.json(
-      { error: "Failed to update team member" },
+      { error: `Failed to update team member: ${error instanceof Error ? error.message : 'Unknown error'}` },
       { status: 500 }
     )
   }

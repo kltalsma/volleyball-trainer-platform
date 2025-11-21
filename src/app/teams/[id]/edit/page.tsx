@@ -29,6 +29,13 @@ interface Member {
   }
 }
 
+interface User {
+  id: string
+  email: string
+  name: string | null
+  role: string
+}
+
 export default function EditTeamPage({ params }: { params: Promise<{ id: string }> }) {
   const unwrappedParams = use(params)
   const router = useRouter()
@@ -47,6 +54,11 @@ export default function EditTeamPage({ params }: { params: Promise<{ id: string 
   })
 
   const [showAddMember, setShowAddMember] = useState(false)
+  const [addMemberMode, setAddMemberMode] = useState<'existing' | 'new'>('existing') // Toggle between existing user and new user
+  const [users, setUsers] = useState<User[]>([])
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedUserId, setSelectedUserId] = useState('')
+  
   const [memberForm, setMemberForm] = useState({
     email: "",
     name: "",
@@ -121,6 +133,30 @@ export default function EditTeamPage({ params }: { params: Promise<{ id: string 
     }
   }
 
+  async function fetchUsers(search = '') {
+    try {
+      const url = search 
+        ? `/api/users?search=${encodeURIComponent(search)}`
+        : '/api/users'
+      const response = await fetch(url)
+      if (response.ok) {
+        const data = await response.json()
+        // Filter out users who are already team members
+        const memberUserIds = new Set(members.map(m => m.user.id))
+        setUsers(data.filter((u: User) => !memberUserIds.has(u.id)))
+      }
+    } catch (error) {
+      console.error("Error fetching users:", error)
+    }
+  }
+
+  // Fetch users when add member is shown in existing mode
+  useEffect(() => {
+    if (showAddMember && addMemberMode === 'existing') {
+      fetchUsers(searchQuery)
+    }
+  }, [showAddMember, addMemberMode, searchQuery, members])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
@@ -161,6 +197,64 @@ export default function EditTeamPage({ params }: { params: Promise<{ id: string 
       setError("An unexpected error occurred")
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleAddExistingUser = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError("")
+    setSuccess("")
+
+    if (!selectedUserId) {
+      setError("Please select a user")
+      return
+    }
+
+    const selectedUser = users.find(u => u.id === selectedUserId)
+    if (!selectedUser) {
+      setError("User not found")
+      return
+    }
+
+    try {
+      const response = await fetch("/api/team-members", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          teamId: unwrappedParams.id,
+          email: selectedUser.email,
+          name: selectedUser.name || selectedUser.email,
+          role: memberForm.role,
+          number: memberForm.number ? parseInt(memberForm.number) : undefined,
+          position: memberForm.position || undefined
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setError(data.error || "Failed to add member")
+        return
+      }
+
+      setSuccess(`${selectedUser.name || selectedUser.email} added successfully!`)
+      setShowAddMember(false)
+      setSelectedUserId('')
+      setSearchQuery('')
+      setMemberForm({
+        email: "",
+        name: "",
+        role: "PLAYER",
+        number: "",
+        position: ""
+      })
+      fetchMembers()
+      setTimeout(() => setSuccess(""), 3000)
+    } catch (err) {
+      console.error("Error adding member:", err)
+      setError("An unexpected error occurred")
     }
   }
 
@@ -217,12 +311,19 @@ export default function EditTeamPage({ params }: { params: Promise<{ id: string 
 
     const updates = memberEdits[memberId]
     
+    console.log('=== FRONTEND UPDATE DEBUG ===')
+    console.log('Member ID:', memberId)
+    console.log('Updates to send:', updates)
+    
     if (!updates || Object.keys(updates).length === 0) {
       setError("No changes to save")
       return
     }
 
     try {
+      console.log('Sending PATCH request to:', `/api/team-members/${memberId}`)
+      console.log('Request body:', JSON.stringify(updates, null, 2))
+      
       const response = await fetch(`/api/team-members/${memberId}`, {
         method: "PATCH",
         headers: {
@@ -231,8 +332,11 @@ export default function EditTeamPage({ params }: { params: Promise<{ id: string 
         body: JSON.stringify(updates),
       })
       
+      console.log('Response status:', response.status)
+      
       if (!response.ok) {
         const data = await response.json()
+        console.log('Error response:', data)
         setError(data.error || "Failed to update member")
         return
       }
@@ -425,98 +529,247 @@ export default function EditTeamPage({ params }: { params: Promise<{ id: string 
 
             {/* Add Member Form */}
             {showAddMember && (
-              <form onSubmit={handleAddMember} className="mb-6 p-4 bg-gray-50 rounded-lg border space-y-4">
-                <h3 className="font-medium text-gray-900">Add New Member</h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Email *
-                    </label>
-                    <input
-                      type="email"
-                      required
-                      value={memberForm.email}
-                      onChange={(e) => setMemberForm({ ...memberForm, email: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
-                      placeholder="member@example.com"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Full Name *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={memberForm.name}
-                      onChange={(e) => setMemberForm({ ...memberForm, name: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
-                      placeholder="John Doe"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Role *
-                    </label>
-                    <select
-                      value={memberForm.role}
-                      onChange={(e) => setMemberForm({ ...memberForm, role: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
+              <div className="mb-6 p-4 bg-gray-50 rounded-lg border space-y-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-medium text-gray-900">Add Team Member</h3>
+                  
+                  {/* Tab Toggle */}
+                  <div className="inline-flex rounded-lg border border-gray-300 bg-white p-1">
+                    <button
+                      type="button"
+                      onClick={() => setAddMemberMode('existing')}
+                      className={`px-4 py-1.5 text-sm rounded-md transition-colors ${
+                        addMemberMode === 'existing'
+                          ? 'bg-blue-600 text-white'
+                          : 'text-gray-700 hover:text-gray-900'
+                      }`}
                     >
-                      <option value="PLAYER">Player</option>
-                      <option value="COACH">Coach</option>
-                      <option value="ASSISTANT_COACH">Assistant Coach</option>
-                      <option value="PARENT">Parent</option>
-                      <option value="VOLUNTEER">Volunteer</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Jersey Number
-                    </label>
-                    <input
-                      type="number"
-                      value={memberForm.number}
-                      onChange={(e) => setMemberForm({ ...memberForm, number: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
-                      placeholder="e.g., 7"
-                    />
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Position
-                    </label>
-                    <input
-                      type="text"
-                      value={memberForm.position}
-                      onChange={(e) => setMemberForm({ ...memberForm, position: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
-                      placeholder="e.g., Outside Hitter, Setter, Libero"
-                    />
+                      Existing User
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAddMemberMode('new')}
+                      className={`px-4 py-1.5 text-sm rounded-md transition-colors ${
+                        addMemberMode === 'new'
+                          ? 'bg-blue-600 text-white'
+                          : 'text-gray-700 hover:text-gray-900'
+                      }`}
+                    >
+                      New User
+                    </button>
                   </div>
                 </div>
 
-                <div className="flex gap-2">
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    Add Member
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowAddMember(false)}
-                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
+                {/* Existing User Form */}
+                {addMemberMode === 'existing' && (
+                  <form onSubmit={handleAddExistingUser} className="space-y-4">
+                    {/* Search Bar */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Search Users
+                      </label>
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
+                        placeholder="Search by name or email..."
+                      />
+                    </div>
+
+                    {/* User Selection */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Select User *
+                      </label>
+                      <select
+                        required
+                        value={selectedUserId}
+                        onChange={(e) => setSelectedUserId(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
+                      >
+                        <option value="">-- Select a user --</option>
+                        {users.map((user) => (
+                          <option key={user.id} value={user.id}>
+                            {user.name || user.email} ({user.email})
+                          </option>
+                        ))}
+                      </select>
+                      {users.length === 0 && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          {searchQuery ? 'No users found. Try a different search.' : 'Loading users...'}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Role *
+                        </label>
+                        <select
+                          value={memberForm.role}
+                          onChange={(e) => setMemberForm({ ...memberForm, role: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
+                        >
+                          <option value="PLAYER">Player</option>
+                          <option value="COACH">Coach</option>
+                          <option value="TRAINER">Trainer</option>
+                          <option value="ASSISTANT_COACH">Assistant Coach</option>
+                          <option value="PARENT">Parent</option>
+                          <option value="VOLUNTEER">Volunteer</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Jersey Number
+                        </label>
+                        <input
+                          type="number"
+                          value={memberForm.number}
+                          onChange={(e) => setMemberForm({ ...memberForm, number: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
+                          placeholder="e.g., 7"
+                        />
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Position
+                        </label>
+                        <input
+                          type="text"
+                          value={memberForm.position}
+                          onChange={(e) => setMemberForm({ ...memberForm, position: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
+                          placeholder="e.g., Outside Hitter, Setter, Libero"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        type="submit"
+                        disabled={!selectedUserId}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Add to Team
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowAddMember(false)
+                          setSelectedUserId('')
+                          setSearchQuery('')
+                        }}
+                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                {/* New User Form */}
+                {addMemberMode === 'new' && (
+                  <form onSubmit={handleAddMember} className="space-y-4">
+                    <p className="text-sm text-gray-600">
+                      Create a new user account and add them to the team. They will receive an invitation email.
+                    </p>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Email *
+                        </label>
+                        <input
+                          type="email"
+                          required
+                          value={memberForm.email}
+                          onChange={(e) => setMemberForm({ ...memberForm, email: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
+                          placeholder="member@example.com"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Full Name *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={memberForm.name}
+                          onChange={(e) => setMemberForm({ ...memberForm, name: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
+                          placeholder="John Doe"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Role *
+                        </label>
+                        <select
+                          value={memberForm.role}
+                          onChange={(e) => setMemberForm({ ...memberForm, role: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
+                        >
+                          <option value="PLAYER">Player</option>
+                          <option value="COACH">Coach</option>
+                          <option value="TRAINER">Trainer</option>
+                          <option value="ASSISTANT_COACH">Assistant Coach</option>
+                          <option value="PARENT">Parent</option>
+                          <option value="VOLUNTEER">Volunteer</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Jersey Number
+                        </label>
+                        <input
+                          type="number"
+                          value={memberForm.number}
+                          onChange={(e) => setMemberForm({ ...memberForm, number: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
+                          placeholder="e.g., 7"
+                        />
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Position
+                        </label>
+                        <input
+                          type="text"
+                          value={memberForm.position}
+                          onChange={(e) => setMemberForm({ ...memberForm, position: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
+                          placeholder="e.g., Outside Hitter, Setter, Libero"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        type="submit"
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        Create & Add Member
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowAddMember(false)}
+                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </div>
             )}
 
             {/* Members List */}
@@ -539,6 +792,7 @@ export default function EditTeamPage({ params }: { params: Promise<{ id: string 
                           </h3>
                           <span className={`px-2 py-1 text-xs rounded-full ${
                             member.role === 'COACH' ? 'bg-purple-100 text-purple-700' :
+                            member.role === 'TRAINER' ? 'bg-orange-100 text-orange-700' :
                             member.role === 'ASSISTANT_COACH' ? 'bg-blue-100 text-blue-700' :
                             member.role === 'PLAYER' ? 'bg-green-100 text-green-700' :
                             'bg-gray-100 text-gray-700'
@@ -590,6 +844,7 @@ export default function EditTeamPage({ params }: { params: Promise<{ id: string 
                             >
                               <option value="PLAYER">Player</option>
                               <option value="COACH">Coach</option>
+                              <option value="TRAINER">Trainer</option>
                               <option value="ASSISTANT_COACH">Assistant Coach</option>
                               <option value="PARENT">Parent</option>
                               <option value="VOLUNTEER">Volunteer</option>

@@ -8,7 +8,7 @@ interface Point {
 }
 
 interface DrawingElement {
-  type: "line" | "arrow" | "circle" | "player"
+  type: "line" | "arrow" | "circle" | "player" | "volleyball" | "pylon" | "net" | "target" | "bench"
   points: Point[]
   color: string
   label?: string

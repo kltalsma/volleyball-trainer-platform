@@ -77,7 +77,7 @@ export async function POST(request: Request) {
           email,
           name,
           password: hashedPassword,
-          role: role === "COACH" || role === "ASSISTANT_COACH" ? "TRAINER" : "PLAYER"
+          role: role === "COACH" || role === "TRAINER" || role === "ASSISTANT_COACH" ? "TRAINER" : "PLAYER"
         }
       })
     }

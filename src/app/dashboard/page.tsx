@@ -119,7 +119,7 @@ export default async function DashboardPage() {
       },
       take: 5
     }),
-    // Recent & upcoming trainings (unscheduled, or within 2 hours to future)
+    // Recent & upcoming trainings
     prisma.workout.findMany({
       where: {
         AND: [
@@ -136,17 +136,8 @@ export default async function DashboardPage() {
                 }
               }
             ]
-          },
-          {
-            OR: [
-              { startTime: null },
-              { 
-                startTime: { 
-                  gte: new Date(Date.now() - 2 * 60 * 60 * 1000) // Show trainings from 2 hours ago or future
-                }
-              }
-            ]
           }
+          // Show all trainings user has access to (no time filter)
         ]
       },
       include: {
@@ -351,6 +342,14 @@ export default async function DashboardPage() {
               >
                 🏐 Exercises
               </a>
+              {isAdmin && (
+                <a
+                  href="/admin"
+                  className="px-3 py-2 text-sm font-medium text-red-600 hover:text-red-700 hover:border-b-2 hover:border-red-300 transition-colors"
+                >
+                  🛡️ Admin
+                </a>
+              )}
             </div>
           </div>
         </nav>

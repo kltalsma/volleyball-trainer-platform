@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
 import { format } from "date-fns"
+import TrainingCalendar from "@/components/TrainingCalendar"
 
 interface Training {
   id: string
@@ -231,107 +232,12 @@ export default function TeamDetailPage() {
           </div>
         </div>
 
-        {/* Scheduled Trainings Section */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold text-gray-900">📅 Scheduled Trainings</h2>
-            <button
-              onClick={() => setShowScheduleModal(true)}
-              className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition"
-            >
-              + Schedule Training
-            </button>
-          </div>
-
-          {scheduledTrainings.length === 0 ? (
-            <div className="text-center py-12 bg-gray-50 rounded-lg">
-              <p className="text-gray-500 text-lg mb-2">No scheduled trainings yet</p>
-              <p className="text-sm text-gray-400 mb-4">Schedule a training to track attendance</p>
-              <button
-                onClick={() => setShowScheduleModal(true)}
-                className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition"
-              >
-                Schedule First Training
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {scheduledTrainings.map((training) => {
-                const isPast = new Date(training.scheduledAt) < new Date()
-                const isToday = new Date(training.scheduledAt).toDateString() === new Date().toDateString()
-                
-                return (
-                  <Link
-                    key={training.id}
-                    href={`/teams/${params.id}/trainings/${training.id}`}
-                    className="block p-4 rounded-lg border hover:border-blue-300 hover:shadow-sm transition"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold text-gray-900">{training.title}</h3>
-                          {isToday && (
-                            <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-full">
-                              Today
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-600">
-                          {format(new Date(training.scheduledAt), "EEEE, MMMM d, yyyy 'at' h:mm a")}
-                        </p>
-                        {training.location && (
-                          <p className="text-xs text-gray-500 mt-1">📍 {training.location}</p>
-                        )}
-                        {training.workout && (
-                          <p className="text-xs text-blue-600 mt-1">
-                            Based on: {training.workout.title}
-                          </p>
-                        )}
-                        
-                        {/* Attendance Summary */}
-                        <div className="flex gap-4 mt-3 text-sm">
-                          <span className="text-gray-600">
-                            👥 {training.attendanceSummary.total} members
-                          </span>
-                          {isPast ? (
-                            <>
-                              <span className="text-green-600">
-                                ✓ {training.attendanceSummary.present} present
-                              </span>
-                              {training.attendanceSummary.absent > 0 && (
-                                <span className="text-red-600">
-                                  ✗ {training.attendanceSummary.absent} absent
-                                </span>
-                              )}
-                              {training.attendanceSummary.late > 0 && (
-                                <span className="text-yellow-600">
-                                  ⏰ {training.attendanceSummary.late} late
-                                </span>
-                              )}
-                            </>
-                          ) : (
-                            <span className="text-gray-500">
-                              ⏱ {training.attendanceSummary.pending} pending
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      
-                      <span className={`px-3 py-1 text-xs font-medium rounded-full whitespace-nowrap ${
-                        training.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
-                        training.status === 'CANCELLED' ? 'bg-red-100 text-red-700' :
-                        isPast ? 'bg-yellow-100 text-yellow-700' :
-                        'bg-blue-100 text-blue-700'
-                      }`}>
-                        {training.status === 'SCHEDULED' && isPast ? 'NEEDS REVIEW' : training.status}
-                      </span>
-                    </div>
-                  </Link>
-                )
-              })}
-            </div>
-          )}
-        </div>
+        {/* Scheduled Trainings Section - New Calendar/List Component */}
+        <TrainingCalendar 
+          trainings={scheduledTrainings}
+          teamId={params.id as string}
+          onScheduleTraining={() => setShowScheduleModal(true)}
+        />
 
         {/* Trainings Section */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
@@ -441,6 +347,7 @@ export default function TeamDetailPage() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 text-xs rounded-full ${
                         member.role === 'COACH' ? 'bg-purple-100 text-purple-700' :
+                        member.role === 'TRAINER' ? 'bg-orange-100 text-orange-700' :
                         member.role === 'ASSISTANT_COACH' ? 'bg-blue-100 text-blue-700' :
                         'bg-gray-100 text-gray-700'
                       }`}>
