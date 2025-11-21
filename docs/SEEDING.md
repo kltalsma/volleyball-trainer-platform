@@ -1,10 +1,27 @@
-# Seeding Production Database
+# Database Seeding (Production)
 
-This guide explains how to seed your production database with test data (teams, users, exercises, training plans).
+This guide explains how database seeding works in production.
 
-## Quick Start
+## 🎉 Automatic Seeding
 
-Once your Railway deployment is complete, run:
+**The database is automatically seeded on every Railway deployment!**
+
+When you push code:
+1. Railway builds the Docker image
+2. Runs database migrations (`prisma migrate deploy`)
+3. **Automatically runs the seed script** (`npm run db:seed`)
+4. Starts the application
+
+The seed script is **idempotent** (safe to run multiple times):
+- ✅ Users, sports, and categories use `upsert()` - won't create duplicates
+- ✅ Teams and exercises are only created if the database is empty
+- ✅ Existing data is preserved on re-deployment
+
+**No manual action needed!** Just push to Railway and your database will be seeded.
+
+## Manual Seeding (Optional)
+
+If you need to manually seed (for testing or troubleshooting):
 
 ```bash
 ./scripts/seed-production.sh https://your-railway-app.railway.app
