@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import { UserDeleteButton } from "@/components/UserDeleteButton"
 import { TeamRoleManager } from "@/components/TeamRoleManager"
+import { AddUserToTeam } from "@/components/AddUserToTeam"
 
 interface Props {
   params: Promise<{
@@ -56,6 +57,19 @@ export default async function EditUserPage({ params }: Props) {
   if (!user) {
     redirect("/admin/users")
   }
+
+  // Fetch all available teams for the "Add to New Team" component
+  const allTeams = await prisma.team.findMany({
+    select: {
+      id: true,
+      name: true,
+      sport: { select: { name: true } }
+    },
+    orderBy: { name: 'asc' }
+  })
+
+  // Get unique team IDs the user is already a member of
+  const existingTeamIds = [...new Set(user.teams.map(m => m.team.id))]
 
   const handleUpdateUser = async (formData: FormData) => {
     "use server"
@@ -293,7 +307,15 @@ export default async function EditUserPage({ params }: Props) {
               </div>
             </div>
 
-            {/* Team Memberships */}
+            {/* Add to New Team */}
+            <AddUserToTeam
+              userEmail={user.email}
+              userName={user.name}
+              availableTeams={allTeams}
+              existingTeamIds={existingTeamIds}
+            />
+
+            {/* Team Memberships - Manage existing roles */}
             <TeamRoleManager 
               userId={user.id} 
               userEmail={user.email}
