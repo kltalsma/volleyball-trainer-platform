@@ -82,19 +82,18 @@ export async function POST(request: Request) {
       })
     }
 
-    // Check if already a member
-    const existingMember = await prisma.teamMember.findUnique({
+    // Check if already a member with this specific role
+    const existingMember = await prisma.teamMember.findFirst({
       where: {
-        teamId_userId: {
-          teamId,
-          userId: user.id
-        }
+        teamId,
+        userId: user.id,
+        role: role || "PLAYER"
       }
     })
 
     if (existingMember) {
       return NextResponse.json(
-        { error: "User is already a member of this team" },
+        { error: "User already has this role on this team" },
         { status: 400 }
       )
     }

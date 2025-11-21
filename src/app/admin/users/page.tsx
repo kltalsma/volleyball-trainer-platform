@@ -1,8 +1,20 @@
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
+import { AdminUserFilters } from "@/components/AdminUserFilters"
 
-export default async function AdminUsersPage() {
+interface SearchParams {
+  role?: string
+  search?: string
+  teamId?: string
+}
+
+export default async function AdminUsersPage({
+  searchParams
+}: {
+  searchParams: Promise<SearchParams>
+}) {
+  const params = await searchParams
   const session = await auth()
 
   if (!session?.user) {
@@ -19,8 +31,31 @@ export default async function AdminUsersPage() {
     redirect("/dashboard")
   }
 
+  // Build filter conditions
+  const whereConditions: any = {}
+  
+  if (params.role && ['ADMIN', 'TRAINER', 'PLAYER'].includes(params.role)) {
+    whereConditions.role = params.role
+  }
+
+  if (params.search) {
+    whereConditions.OR = [
+      { name: { contains: params.search, mode: 'insensitive' } },
+      { email: { contains: params.search, mode: 'insensitive' } }
+    ]
+  }
+
+  if (params.teamId) {
+    whereConditions.teams = {
+      some: {
+        teamId: params.teamId
+      }
+    }
+  }
+
   // Fetch all users with their team memberships
   const users = await prisma.user.findMany({
+    where: Object.keys(whereConditions).length > 0 ? whereConditions : undefined,
     include: {
       teams: {
         include: {
@@ -42,6 +77,15 @@ export default async function AdminUsersPage() {
       }
     },
     orderBy: { createdAt: 'desc' }
+  })
+
+  // Fetch all teams for the filter dropdown
+  const teams = await prisma.team.findMany({
+    select: {
+      id: true,
+      name: true
+    },
+    orderBy: { name: 'asc' }
   })
 
   const userStats = {
@@ -117,6 +161,9 @@ export default async function AdminUsersPage() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* User Filters */}
+        <AdminUserFilters teams={teams} />
+
         {/* User Statistics */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-xl shadow-sm border p-6">
@@ -231,6 +278,14 @@ export default async function AdminUsersPage() {
                               <div key={membership.id} className="text-xs">
                                 <span className="font-medium">{membership.team.name}</span>
                                 <span className="text-gray-500"> ({membership.team.sport.name})</span>
+                                <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
+                                  membership.role === 'COACH' ? 'bg-purple-100 text-purple-700' :
+                                  membership.role === 'TRAINER' ? 'bg-orange-100 text-orange-700' :
+                                  membership.role === 'ASSISTANT_COACH' ? 'bg-blue-100 text-blue-700' :
+                                  'bg-gray-100 text-gray-700'
+                                }`}>
+                                  {membership.role.replace('_', ' ')}
+                                </span>
                               </div>
                             ))}
                             {user.teams.length > 2 && (
