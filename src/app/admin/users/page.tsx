@@ -95,6 +95,24 @@ export default async function AdminUsersPage({
     players: users.filter(u => u.role === 'PLAYER').length,
   }
 
+  // Helper function to group team memberships by team
+  const groupTeamsByTeamId = (teams: any[]) => {
+    const grouped = new Map<string, { team: any; roles: string[] }>()
+    
+    teams.forEach((membership) => {
+      const teamId = membership.team.id
+      if (!grouped.has(teamId)) {
+        grouped.set(teamId, {
+          team: membership.team,
+          roles: []
+        })
+      }
+      grouped.get(teamId)!.roles.push(membership.role)
+    })
+    
+    return Array.from(grouped.values())
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-orange-50">
       {/* Header */}
@@ -216,7 +234,7 @@ export default async function AdminUsersPage({
           </div>
           
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="min-w-full w-full">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -274,25 +292,38 @@ export default async function AdminUsersPage({
                       <div className="text-sm text-gray-900">
                         {user.teams.length > 0 ? (
                           <div className="space-y-1">
-                            {user.teams.slice(0, 2).map((membership) => (
-                              <div key={membership.id} className="text-xs">
-                                <span className="font-medium">{membership.team.name}</span>
-                                <span className="text-gray-500"> ({membership.team.sport.name})</span>
-                                <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
-                                  membership.role === 'COACH' ? 'bg-purple-100 text-purple-700' :
-                                  membership.role === 'TRAINER' ? 'bg-orange-100 text-orange-700' :
-                                  membership.role === 'ASSISTANT_COACH' ? 'bg-blue-100 text-blue-700' :
-                                  'bg-gray-100 text-gray-700'
-                                }`}>
-                                  {membership.role.replace('_', ' ')}
-                                </span>
-                              </div>
-                            ))}
-                            {user.teams.length > 2 && (
-                              <div className="text-xs text-gray-500">
-                                +{user.teams.length - 2} more
-                              </div>
-                            )}
+                            {(() => {
+                              // Group memberships by team
+                              const teamMap = new Map<string, { team: any; roles: string[] }>()
+                              user.teams.forEach((membership) => {
+                                const teamId = membership.team.id
+                                if (!teamMap.has(teamId)) {
+                                  teamMap.set(teamId, { team: membership.team, roles: [] })
+                                }
+                                teamMap.get(teamId)!.roles.push(membership.role)
+                              })
+                              
+                              const groupedTeams = Array.from(teamMap.values())
+                              
+                              return groupedTeams.slice(0, 2).map((group, idx) => (
+                                <div key={`${group.team.id}-${idx}`} className="text-xs">
+                                  <span className="font-medium">{group.team.name}</span>
+                                  <span className="text-gray-500"> ({group.team.sport.name})</span>
+                                  <span className="ml-2 text-gray-600">
+                                    ({group.roles.map(role => role.replace('_', ' ')).join(', ')})
+                                  </span>
+                                </div>
+                              ))
+                            })()}
+                            {(() => {
+                              // Count unique teams for "more" indicator
+                              const uniqueTeams = new Set(user.teams.map(m => m.team.id))
+                              return uniqueTeams.size > 2 && (
+                                <div className="text-xs text-gray-500">
+                                  +{uniqueTeams.size - 2} more
+                                </div>
+                              )
+                            })()}
                           </div>
                         ) : (
                           <span className="text-gray-500 text-sm">No teams</span>
