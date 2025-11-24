@@ -19,40 +19,65 @@ export async function GET() {
       return NextResponse.json({ error: "Admin access required" }, { status: 403 })
     }
 
-    // Get all constraints on team_members table
+    // Get all constraints on team_members table with their columns
     const constraints = await prisma.$queryRaw`
       SELECT 
         tc.constraint_name,
         tc.constraint_type,
-        kcu.column_name,
-        tc.table_name
+        string_agg(kcu.column_name, ', ' ORDER BY kcu.ordinal_position) as columns
       FROM information_schema.table_constraints tc
       JOIN information_schema.key_column_usage kcu
         ON tc.constraint_name = kcu.constraint_name
         AND tc.table_schema = kcu.table_schema
       WHERE tc.table_name = 'team_members'
-      ORDER BY tc.constraint_name, kcu.ordinal_position
+      GROUP BY tc.constraint_name, tc.constraint_type
+      ORDER BY tc.constraint_name
     `
 
-    // Also check indexes
+    // Get all indexes on team_members table
     const indexes = await prisma.$queryRaw`
-      SELECT
+      SELECT 
         indexname,
         indexdef
       FROM pg_indexes
       WHERE tablename = 'team_members'
+      ORDER BY indexname
+    `
+
+    // Get migration history
+    const migrations = await prisma.$queryRaw`
+      SELECT 
+        migration_name,
+        finished_at,
+        applied_steps_count
+      FROM "_prisma_migrations"
+      WHERE migration_name LIKE '%allow_multiple_roles%'
+      ORDER BY finished_at DESC
+    `
+
+    // Get sample team member data to verify actual constraint behavior
+    const sampleData = await prisma.$queryRaw`
+      SELECT 
+        "userId",
+        "teamId",
+        role,
+        COUNT(*) as count
+      FROM team_members
+      GROUP BY "userId", "teamId", role
+      HAVING COUNT(*) > 1
+      LIMIT 5
     `
 
     return NextResponse.json({ 
-      success: true,
       constraints,
       indexes,
-      message: 'Current database constraints and indexes for team_members table'
+      migrations,
+      duplicateCheck: sampleData,
+      note: "If duplicateCheck has results, there are duplicate (userId, teamId, role) combinations"
     })
   } catch (error: any) {
     console.error('Error checking constraints:', error)
     return NextResponse.json({ 
-      success: false,
       error: error.message || 'Failed to check constraints'
     }, { status: 500 })
   }
