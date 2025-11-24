@@ -4,14 +4,16 @@ import { useState } from 'react'
 
 export function DatabaseFixButton() {
   const [fixing, setFixing] = useState(false)
-  const [result, setResult] = useState<{type: 'success' | 'error', message: string} | null>(null)
+  const [forceFix, setForceFix] = useState(false)
+  const [result, setResult] = useState<{type: 'success' | 'error', message: string, data?: any} | null>(null)
 
-  const fixConstraint = async () => {
+  const fixConstraint = async (force: boolean = false) => {
     setFixing(true)
     setResult(null)
     
     try {
-      const response = await fetch('/api/fix-constraint', {
+      const endpoint = force ? '/api/force-fix-constraint' : '/api/fix-constraint'
+      const response = await fetch(endpoint, {
         method: 'POST',
         credentials: 'include'
       })
@@ -19,9 +21,9 @@ export function DatabaseFixButton() {
       const data = await response.json()
       
       if (data.success) {
-        setResult({ type: 'success', message: data.message })
+        setResult({ type: 'success', message: data.message, data })
       } else {
-        setResult({ type: 'error', message: data.error })
+        setResult({ type: 'error', message: data.error, data })
       }
     } catch (error: any) {
       setResult({ type: 'error', message: 'Failed to connect: ' + error.message })
@@ -49,16 +51,34 @@ export function DatabaseFixButton() {
                 If you're seeing "Unique constraint failed on (teamId, userId)" when adding extra roles, 
                 click this button to update the database constraint to allow multiple roles per user per team.
               </p>
-              <button
-                onClick={fixConstraint}
-                disabled={fixing}
-                className="px-4 py-2 bg-yellow-600 text-white text-sm font-medium rounded-lg hover:bg-yellow-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {fixing ? 'Running...' : 'Run Database Fix'}
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => fixConstraint(false)}
+                  disabled={fixing}
+                  className="px-4 py-2 bg-yellow-600 text-white text-sm font-medium rounded-lg hover:bg-yellow-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {fixing ? 'Running...' : 'Run Database Fix'}
+                </button>
+                <button
+                  onClick={() => fixConstraint(true)}
+                  disabled={fixing}
+                  className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {fixing ? 'Running...' : 'FORCE Fix'}
+                </button>
+              </div>
               {result && (
-                <div className={`mt-3 text-sm ${result.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
-                  {result.type === 'success' ? '✅' : '❌'} {result.message}
+                <div className={`mt-3 ${result.type === 'success' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'} border rounded-lg p-3`}>
+                  <div className={`text-sm font-medium ${result.type === 'success' ? 'text-green-900' : 'text-red-900'}`}>
+                    {result.type === 'success' ? '✅' : '❌'} {result.message}
+                  </div>
+                  {result.data?.logs && (
+                    <div className="mt-2 text-xs text-gray-600 font-mono bg-white rounded p-2 max-h-64 overflow-auto">
+                      {result.data.logs.map((log: string, i: number) => (
+                        <div key={i}>{log}</div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
