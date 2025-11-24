@@ -25,7 +25,7 @@ export async function POST() {
     const checkConstraint = await prisma.$queryRaw`
       SELECT constraint_name, constraint_type
       FROM information_schema.table_constraints
-      WHERE table_name = 'TeamMember'
+      WHERE table_name = 'team_members'
       AND constraint_type = 'UNIQUE'
     `
     console.log('Current constraints:', checkConstraint)
@@ -33,7 +33,7 @@ export async function POST() {
     // Drop the old constraint if it exists
     try {
       await prisma.$executeRaw`
-        ALTER TABLE "TeamMember" 
+        ALTER TABLE "team_members" 
         DROP CONSTRAINT IF EXISTS "TeamMember_teamId_userId_key"
       `
       console.log('✅ Dropped old constraint (teamId, userId)')
@@ -44,7 +44,7 @@ export async function POST() {
     // Add the new constraint
     try {
       await prisma.$executeRaw`
-        ALTER TABLE "TeamMember" 
+        ALTER TABLE "team_members" 
         ADD CONSTRAINT "TeamMember_teamId_userId_role_key" 
         UNIQUE ("teamId", "userId", "role")
       `
@@ -61,7 +61,7 @@ export async function POST() {
     const verifyConstraint = await prisma.$queryRaw`
       SELECT constraint_name, constraint_type
       FROM information_schema.table_constraints
-      WHERE table_name = 'TeamMember'
+      WHERE table_name = 'team_members'
       AND constraint_type = 'UNIQUE'
     `
     console.log('Updated constraints:', verifyConstraint)
