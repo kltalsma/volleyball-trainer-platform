@@ -72,6 +72,7 @@ model TeamMember {
   user       User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   attendance TrainingAttendance[]
 
+  // Allow multiple roles per user on the same team
   @@unique([teamId, userId, role])
   @@map("team_members")
 }

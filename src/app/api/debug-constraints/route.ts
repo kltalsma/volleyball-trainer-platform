@@ -34,10 +34,20 @@ export async function GET() {
       ORDER BY tc.constraint_name, kcu.ordinal_position
     `
 
+    // Also check indexes
+    const indexes = await prisma.$queryRaw`
+      SELECT
+        indexname,
+        indexdef
+      FROM pg_indexes
+      WHERE tablename = 'team_members'
+    `
+
     return NextResponse.json({ 
       success: true,
       constraints,
-      message: 'Current database constraints for team_members table'
+      indexes,
+      message: 'Current database constraints and indexes for team_members table'
     })
   } catch (error: any) {
     console.error('Error checking constraints:', error)
