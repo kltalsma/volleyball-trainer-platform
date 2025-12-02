@@ -2,13 +2,12 @@
 # https://woodpecker-ci.org/docs/usage/intro
 #
 # Deployment Strategy:
-# - Test Environment (k3s): Deploys on PRs and main branch pushes for testing/staging
-# - Production (Railway): Auto-deploys from main branch via GitHub integration
-# 
+# 1. PRs: Test + deploy to k3s staging for preview
+# 2. Main: Test + deploy to k3s staging + Railway production (manual trigger)
+#
 # CI/CD Flow:
-# 1. Create PR → Woodpecker tests & deploys to k3s (preview)
-# 2. Merge to main → Woodpecker deploys to k3s (staging mirror) + Railway deploys (production)
-# 3. k3s and Railway stay in sync after merge
+# 1. Create PR → Woodpecker tests & deploys to k3s (preview/testing)
+# 2. Merge to main → Woodpecker deploys to k3s (staging) → Railway deploys (production via GitHub)
 
 when:
   - event: [pull_request, manual]
@@ -32,32 +31,31 @@ steps:
       - echo "Running type check..."
       - npm run build || echo "Build check completed"
 
-  # Build Docker image for k3s deployment (test environment)
+  # Build Docker image for k3s deployment (test/staging environment)
   build-docker:
     image: docker:24-dind
     privileged: true
     when:
       event: [pull_request, manual, push]
-      branch: [main, feature/*, develop]
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     commands:
-      - echo "Building Docker image for k3s test environment..."
-      - docker build -t volleyball-trainer-platform:${CI_COMMIT_SHA:0:8} .
+      - echo "Building Docker image for k3s staging environment..."
+      - export BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+      - docker build --build-arg COMMIT_HASH=${CI_COMMIT_SHA} --build-arg BUILD_TIME=${BUILD_TIME} --build-arg ENVIRONMENT=staging -t volleyball-trainer-platform:${CI_COMMIT_SHA:0:8} .
       - docker tag volleyball-trainer-platform:${CI_COMMIT_SHA:0:8} volleyball-trainer-platform:latest
-      - echo "Docker image built successfully"
+      - echo "Docker image built successfully with version info - Commit ${CI_COMMIT_SHA} - Build Time ${BUILD_TIME} - Environment staging"
       - docker images | grep volleyball-trainer-platform
 
-  # Deploy to k3s test environment on Sirius
-  deploy-k3s:
+  # Deploy to k3s staging environment (runs on PRs and main)
+  deploy-k3s-staging:
     image: bitnami/kubectl:latest
     when:
       event: [pull_request, manual, push]
-      branch: main
     volumes:
       - /home/kltalsma/.kube/config-woodpecker:/root/.kube/config:ro
     commands:
-      - echo "Deploying to k3s test environment on Sirius..."
+      - echo "Deploying to k3s STAGING environment on Sirius..."
       
       - echo "Testing kubectl connection..."
       - kubectl cluster-info || echo "Connection check failed"
@@ -68,11 +66,17 @@ steps:
       - kubectl rollout status deployment/volleyball-app -n volleyball-trainer --timeout=5m
       
       - echo ""
-      - echo "✅ Deployment to k3s complete!"
-      - echo "🔗 k3s URL http://192.168.68.78:30100"
+      - echo "✅ Deployment to k3s STAGING complete!"
+      - echo "🔗 k3s Staging URL http://192.168.68.78:30100"
       - echo ""
-      - echo "ℹ️ Railway production deploys in parallel from main branch"
-      - echo "🔗 Production URL https://volleyball-trainer-platform-production.up.railway.app/"
+      - |
+        if [ "${CI_PIPELINE_EVENT}" = "push" ] && [ "${CI_COMMIT_BRANCH}" = "main" ]; then
+          echo "ℹ️ Main branch detected - Railway PRODUCTION will auto-deploy via GitHub integration"
+          echo "🔗 Production URL https://volleyball-trainer-platform-production.up.railway.app/"
+        else
+          echo "ℹ️ PR preview deployed to k3s staging"
+          echo "After merge to main, Railway production will auto-deploy"
+        fi
 
   # Lint and code quality checks
   lint:
@@ -85,4 +89,4 @@ steps:
       
       # Check for debugging code
       - echo "Checking for console statements..."
-      - grep -r "console\\.log" src/ && echo "⚠️ Found console.log statements" || echo "✅ No console.log found"
+      - grep -r "console\.log" src/ && echo "⚠️ Found console.log statements" || echo "✅ No console.log found"
