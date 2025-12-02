@@ -21,6 +21,17 @@ COPY . .
 ENV DATABASE_URL="postgresql://placeholder:placeholder@placeholder:5432/placeholder"
 RUN npx prisma generate
 
+# Build-time version info (passed as build args)
+ARG COMMIT_HASH=unknown
+ARG BUILD_TIME
+ARG ENVIRONMENT=production
+
+# Make available to Next.js build
+ENV NEXT_PUBLIC_COMMIT_HASH=$COMMIT_HASH
+ENV NEXT_PUBLIC_BUILD_TIME=$BUILD_TIME
+ENV NEXT_PUBLIC_ENVIRONMENT=$ENVIRONMENT
+ENV NEXT_PUBLIC_APP_VERSION=0.1.0
+
 # Build the application
 ENV NEXT_TELEMETRY_DISABLED 1
 RUN npm run build

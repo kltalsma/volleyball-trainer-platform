@@ -43,9 +43,10 @@ steps:
       - /var/run/docker.sock:/var/run/docker.sock
     commands:
       - echo "Building Docker image for k3s test environment..."
-      - docker build -t volleyball-trainer-platform:${CI_COMMIT_SHA:0:8} .
+      - export BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+      - docker build --build-arg COMMIT_HASH=${CI_COMMIT_SHA} --build-arg BUILD_TIME=${BUILD_TIME} --build-arg ENVIRONMENT=staging -t volleyball-trainer-platform:${CI_COMMIT_SHA:0:8} .
       - docker tag volleyball-trainer-platform:${CI_COMMIT_SHA:0:8} volleyball-trainer-platform:latest
-      - echo "Docker image built successfully"
+      - echo "Docker image built successfully with version info - Commit ${CI_COMMIT_SHA} - Build Time ${BUILD_TIME} - Environment staging"
       - docker images | grep volleyball-trainer-platform
 
   # Deploy to k3s test environment on Sirius
@@ -85,4 +86,4 @@ steps:
       
       # Check for debugging code
       - echo "Checking for console statements..."
-      - grep -r "console\\.log" src/ && echo "⚠️ Found console.log statements" || echo "✅ No console.log found"
+      - grep -r "console\.log" src/ && echo "⚠️ Found console.log statements" || echo "✅ No console.log found"
