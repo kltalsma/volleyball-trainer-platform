@@ -209,3 +209,4 @@ Required environment variables (see `.env.example`):
 - Custom exercise templates
 - Export training plans to PDF
 - Team communication features
+
