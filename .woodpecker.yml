@@ -47,7 +47,7 @@ steps:
     when:
       event: [pull_request, manual]
     volumes:
-      - /etc/rancher/k3s/k3s.yaml:/root/.kube/config:ro
+      - /home/kltalsma/.kube/config:/root/.kube/config:ro
     commands:
       - echo "Deploying to k3s test environment on Sirius..."
       
