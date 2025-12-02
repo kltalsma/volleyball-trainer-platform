@@ -47,10 +47,7 @@ steps:
     when:
       event: [pull_request, manual]
     volumes:
-      - /home/kltalsma/.kube/config:/root/.kube/config:ro
-    backend_options:
-      docker:
-        network_mode: host
+      - /home/kltalsma/.kube/config-woodpecker:/root/.kube/config:ro
     commands:
       - echo "Deploying to k3s test environment on Sirius..."
       
