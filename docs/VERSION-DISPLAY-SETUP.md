@@ -72,3 +72,4 @@ Verify the `ENVIRONMENT` build arg is set correctly:
 - Railway: `production`
 - k3s: `staging`
 - Local: `development` (default)
+# Version Display Feature
