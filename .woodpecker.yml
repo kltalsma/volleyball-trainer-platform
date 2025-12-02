@@ -2,11 +2,18 @@
 # https://woodpecker-ci.org/docs/usage/intro
 #
 # Deployment Strategy:
-# - Test Environment: k3s on Sirius (manual trigger or PR)
-# - Production: Railway auto-deploys from GitHub main branch via GitHub integration
+# - Test Environment (k3s): Deploys on PRs and main branch pushes for testing/staging
+# - Production (Railway): Auto-deploys from main branch via GitHub integration
+# 
+# CI/CD Flow:
+# 1. Create PR → Woodpecker tests & deploys to k3s (preview)
+# 2. Merge to main → Woodpecker deploys to k3s (staging mirror) + Railway deploys (production)
+# 3. k3s and Railway stay in sync after merge
 
 when:
   - event: [pull_request, manual]
+  - event: push
+    branch: main
 
 steps:
   # Install dependencies and run tests
@@ -30,7 +37,7 @@ steps:
     image: docker:24-dind
     privileged: true
     when:
-      event: [pull_request, manual]
+      event: [pull_request, manual, push]
       branch: [main, feature/*, develop]
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
@@ -45,7 +52,8 @@ steps:
   deploy-k3s:
     image: bitnami/kubectl:latest
     when:
-      event: [pull_request, manual]
+      event: [pull_request, manual, push]
+      branch: main
     volumes:
       - /home/kltalsma/.kube/config-woodpecker:/root/.kube/config:ro
     commands:
@@ -60,10 +68,10 @@ steps:
       - kubectl rollout status deployment/volleyball-app -n volleyball-trainer --timeout=5m
       
       - echo ""
-      - echo "✅ Deployment to k3s test environment complete!"
-      - echo "🔗 Test URL http://192.168.68.78:30100"
+      - echo "✅ Deployment to k3s complete!"
+      - echo "🔗 k3s URL http://192.168.68.78:30100"
       - echo ""
-      - echo "ℹ️ Railway production deploys automatically from main branch via GitHub"
+      - echo "ℹ️ Railway production deploys in parallel from main branch"
       - echo "🔗 Production URL https://volleyball-trainer-platform-production.up.railway.app/"
 
   # Lint and code quality checks
