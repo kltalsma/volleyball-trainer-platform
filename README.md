@@ -1,6 +1,6 @@
 # Volleyball Trainer Platform
 
-A modern, fast web application for volleyball trainers to create training sessions, manage exercises, and organize teams. Built as a faster alternative to yoursportplanner.com.
+A modern, fast web application for volleyball trainers to create training sessions, manage exercises, and organize teams.
 
 ## Features
 
