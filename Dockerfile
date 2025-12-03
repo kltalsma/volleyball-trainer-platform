@@ -58,6 +58,9 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/package.json ./package.json
+# Create cache directory with proper permissions for nextjs user
+RUN mkdir -p .next/cache && chown -R nextjs:nodejs .next/cache
+
 
 # Copy start script
 COPY start.sh ./start.sh
