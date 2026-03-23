@@ -40,7 +40,8 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* Fix input text visibility */
-input {
+/* Fix input and select text visibility */
+input,
+select {
   color: #000000;
 }
