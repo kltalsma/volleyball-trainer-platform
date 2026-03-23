@@ -69,7 +69,8 @@ RUN chmod +x ./start.sh
 USER nextjs
 
 # Railway automatically sets the PORT env var, default to 3000 for local dev
-EXPOSE ${PORT:-3000}
+#EXPOSE ${PORT:-3000}
+EXPOSE ${PORT:-30100}
 
 ENV HOSTNAME "0.0.0.0"
 
