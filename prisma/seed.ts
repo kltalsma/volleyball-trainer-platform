@@ -3,6 +3,12 @@ import * as bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
 
+async function findOrCreateTeam(data: Parameters<typeof prisma.team.create>[0]['data']) {
+  const existing = await prisma.team.findFirst({ where: { name: data.name } })
+  if (existing) return existing
+  return prisma.team.create({ data })
+}
+
 async function main() {
   console.log('🌱 Start seeding...')
 
@@ -261,7 +267,7 @@ async function main() {
 
   // Upgrade Luuk de Goede to TRAINER role (he's both player and trainer for D1)
   await prisma.user.update({
-    where: { email: 'luuk.degoede@opmheerenveen.nl' },
+    where: { email: 'luuk.de.goede@opmheerenveen.nl' },
     data: { role: UserRole.TRAINER },
   })
 
@@ -303,144 +309,117 @@ async function main() {
 
   console.log('✅ Created 3 trainers + upgraded Luuk to trainer')
 
-  // Create teams
+  // Create teams (findOrCreate by name so re-runs are idempotent)
   console.log('🏐 Creating teams...')
-  
-  // Check if teams already exist
-  const existingTeamsCount = await prisma.team.count()
-  if (existingTeamsCount > 0) {
-    console.log(`⏭️  Skipping teams creation - ${existingTeamsCount} teams already exist`)
-  } else {
-    const h1 = await prisma.team.create({
-    data: {
-      name: 'OPM Heerenveen H1',
-      description: 'Heren 1 - Promotie klasse',
-      sportId: volleyball.id,
-      creatorId: klaas.id,
-      volleybalNlClubId: 'ckl6f7m',
-      volleybalNlCategory: 'heren',
-      volleybalNlTeamNumber: 1,
-    },
+
+  const h1 = await findOrCreateTeam({
+    name: 'OPM Heerenveen H1',
+    description: 'Heren 1 - Promotie klasse',
+    sportId: volleyball.id,
+    creatorId: klaas.id,
+    volleybalNlClubId: 'ckl6f7m',
+    volleybalNlCategory: 'heren',
+    volleybalNlTeamNumber: 1,
   })
 
-  const h2 = await prisma.team.create({
-    data: {
-      name: 'OPM Heerenveen H2',
-      description: 'Heren 2 - Derde klasse',
-      sportId: volleyball.id,
-      creatorId: klaas.id,
-      volleybalNlClubId: 'ckl6f7m',
-      volleybalNlCategory: 'heren',
-      volleybalNlTeamNumber: 3,
-    },
+  const h2 = await findOrCreateTeam({
+    name: 'OPM Heerenveen H2',
+    description: 'Heren 2 - Derde klasse',
+    sportId: volleyball.id,
+    creatorId: klaas.id,
+    volleybalNlClubId: 'ckl6f7m',
+    volleybalNlCategory: 'heren',
+    volleybalNlTeamNumber: 3,
   })
 
-  const d1 = await prisma.team.create({
-    data: {
-      name: 'OPM Heerenveen D1',
-      description: 'Dames 1 - Eerste klasse',
-      sportId: volleyball.id,
-      creatorId: klaas.id,
-      volleybalNlClubId: 'ckl6f7m',
-      volleybalNlCategory: 'dames',
-      volleybalNlTeamNumber: 1,
-    },
+  const d1 = await findOrCreateTeam({
+    name: 'OPM Heerenveen D1',
+    description: 'Dames 1 - Eerste klasse',
+    sportId: volleyball.id,
+    creatorId: klaas.id,
+    volleybalNlClubId: 'ckl6f7m',
+    volleybalNlCategory: 'dames',
+    volleybalNlTeamNumber: 1,
   })
 
-  const d2 = await prisma.team.create({
-    data: {
-      name: 'OPM Heerenveen D2',
-      description: 'Dames 2 - Tweede klasse',
-      sportId: volleyball.id,
-      creatorId: klaas.id,
-      volleybalNlClubId: 'ckl6f7m',
-      volleybalNlCategory: 'dames',
-      volleybalNlTeamNumber: 2,
-    },
+  const d2 = await findOrCreateTeam({
+    name: 'OPM Heerenveen D2',
+    description: 'Dames 2 - Tweede klasse',
+    sportId: volleyball.id,
+    creatorId: klaas.id,
+    volleybalNlClubId: 'ckl6f7m',
+    volleybalNlCategory: 'dames',
+    volleybalNlTeamNumber: 2,
   })
 
-  const d4 = await prisma.team.create({
-    data: {
-      name: 'OPM Heerenveen D4',
-      description: 'Dames 4 - Vierde klasse',
-      sportId: volleyball.id,
-      creatorId: klaas.id,
-      volleybalNlClubId: 'ckl6f7m',
-      volleybalNlCategory: 'dames',
-      volleybalNlTeamNumber: 3,
-    },
+  const d4 = await findOrCreateTeam({
+    name: 'OPM Heerenveen D4',
+    description: 'Dames 4 - Vierde klasse',
+    sportId: volleyball.id,
+    creatorId: klaas.id,
+    volleybalNlClubId: 'ckl6f7m',
+    volleybalNlCategory: 'dames',
+    volleybalNlTeamNumber: 3,
   })
 
-  const specialLadies = await prisma.team.create({
-    data: {
-      name: 'Special Ladies',
-      description: 'Mastercompetitie',
-      sportId: volleyball.id,
-      creatorId: klaas.id,
-      volleybalNlClubId: 'ckl6f7m',
-      volleybalNlCategory: 'dames-master',
-      volleybalNlTeamNumber: 1,
-    },
+  const specialLadies = await findOrCreateTeam({
+    name: 'Special Ladies',
+    description: 'Mastercompetitie',
+    sportId: volleyball.id,
+    creatorId: klaas.id,
+    volleybalNlClubId: 'ckl6f7m',
+    volleybalNlCategory: 'dames-master',
+    volleybalNlTeamNumber: 1,
   })
 
-  const ma1 = await prisma.team.create({
-    data: {
-      name: 'OPM Heerenveen MA1',
-      description: 'Meisjes A1 - Tweede klasse',
-      sportId: volleyball.id,
-      creatorId: klaas.id,
-      volleybalNlClubId: 'ckl6f7m',
-      volleybalNlCategory: 'meisjes-a',
-      volleybalNlTeamNumber: 1,
-    },
+  const ma1 = await findOrCreateTeam({
+    name: 'OPM Heerenveen MA1',
+    description: 'Meisjes A1 - Tweede klasse',
+    sportId: volleyball.id,
+    creatorId: klaas.id,
+    volleybalNlClubId: 'ckl6f7m',
+    volleybalNlCategory: 'meisjes-a',
+    volleybalNlTeamNumber: 1,
   })
 
-  const mb1 = await prisma.team.create({
-    data: {
-      name: 'OPM Heerenveen MB1',
-      description: 'Meisjes B1 - Eerste klasse',
-      sportId: volleyball.id,
-      creatorId: klaas.id,
-      volleybalNlClubId: 'ckl6f7m',
-      volleybalNlCategory: 'meisjes-b',
-      volleybalNlTeamNumber: 1,
-    },
+  const mb1 = await findOrCreateTeam({
+    name: 'OPM Heerenveen MB1',
+    description: 'Meisjes B1 - Eerste klasse',
+    sportId: volleyball.id,
+    creatorId: klaas.id,
+    volleybalNlClubId: 'ckl6f7m',
+    volleybalNlCategory: 'meisjes-b',
+    volleybalNlTeamNumber: 1,
   })
 
-  const mb2 = await prisma.team.create({
-    data: {
-      name: 'OPM Heerenveen MB2',
-      description: 'Meisjes B2 - Eerste klasse',
-      sportId: volleyball.id,
-      creatorId: klaas.id,
-      volleybalNlClubId: 'ckl6f7m',
-      volleybalNlCategory: 'meisjes-b',
-      volleybalNlTeamNumber: 2,
-    },
+  const mb2 = await findOrCreateTeam({
+    name: 'OPM Heerenveen MB2',
+    description: 'Meisjes B2 - Eerste klasse',
+    sportId: volleyball.id,
+    creatorId: klaas.id,
+    volleybalNlClubId: 'ckl6f7m',
+    volleybalNlCategory: 'meisjes-b',
+    volleybalNlTeamNumber: 2,
   })
 
-  const xc1 = await prisma.team.create({
-    data: {
-      name: 'OPM Heerenveen XC1',
-      description: 'Mix C1 - Eerste klasse',
-      sportId: volleyball.id,
-      creatorId: klaas.id,
-      volleybalNlClubId: 'ckl6f7m',
-      volleybalNlCategory: 'mixed-c',
-      volleybalNlTeamNumber: 1,
-    },
+  const xc1 = await findOrCreateTeam({
+    name: 'OPM Heerenveen XC1',
+    description: 'Mix C1 - Eerste klasse',
+    sportId: volleyball.id,
+    creatorId: klaas.id,
+    volleybalNlClubId: 'ckl6f7m',
+    volleybalNlCategory: 'mixed-c',
+    volleybalNlTeamNumber: 1,
   })
 
-  const xc2 = await prisma.team.create({
-    data: {
-      name: 'OPM Heerenveen XC2',
-      description: 'Mix C2 - Tweede klasse',
-      sportId: volleyball.id,
-      creatorId: klaas.id,
-      volleybalNlClubId: 'ckl6f7m',
-      volleybalNlCategory: 'mixed-c',
-      volleybalNlTeamNumber: 2,
-    },
+  const xc2 = await findOrCreateTeam({
+    name: 'OPM Heerenveen XC2',
+    description: 'Mix C2 - Tweede klasse',
+    sportId: volleyball.id,
+    creatorId: klaas.id,
+    volleybalNlClubId: 'ckl6f7m',
+    volleybalNlCategory: 'mixed-c',
+    volleybalNlTeamNumber: 2,
   })
 
   // Add team members
@@ -450,7 +429,7 @@ async function main() {
   const justinTrainer = await prisma.user.findUnique({ where: { email: 'justin.laan@opmheerenveen.nl' } })
   const peterTrainer = await prisma.user.findUnique({ where: { email: 'peter.busstra@opmheerenveen.nl' } })
   const maartenTrainer = await prisma.user.findUnique({ where: { email: 'maarten.opm@opmheerenveen.nl' } })
-  const luukTrainer = await prisma.user.findUnique({ where: { email: 'luuk.degoede@opmheerenveen.nl' } })
+  const luukTrainer = await prisma.user.findUnique({ where: { email: 'luuk.de.goede@opmheerenveen.nl' } })
 
   if (!justinTrainer || !peterTrainer || !maartenTrainer || !luukTrainer) {
     throw new Error('Trainer users not found. Ensure trainers are created before teams.')
@@ -458,6 +437,7 @@ async function main() {
 
   // H1 team members - Justin as trainer
   await prisma.teamMember.createMany({
+    skipDuplicates: true,
     data: [
       { teamId: h1.id, userId: justinTrainer.id, role: MemberRole.TRAINER },
       { teamId: h1.id, userId: h1Players.ruurdZwigt.id, role: MemberRole.PLAYER, number: 1, position: 'Opposite' },
@@ -476,6 +456,7 @@ async function main() {
 
   // H2 team members
   await prisma.teamMember.createMany({
+    skipDuplicates: true,
     data: [
       { teamId: h2.id, userId: peterTrainer.id, role: MemberRole.TRAINER },
       { teamId: h2.id, userId: h2Players.hermanMiedema.id, role: MemberRole.PLAYER, number: 1 },
@@ -493,6 +474,7 @@ async function main() {
 
   // D1 team members
   await prisma.teamMember.createMany({
+    skipDuplicates: true,
     data: [
       { teamId: d1.id, userId: luukTrainer.id, role: MemberRole.TRAINER },
       { teamId: d1.id, userId: d1Players.irisDeJonge.id, role: MemberRole.PLAYER, number: 1, position: 'Libero' },
@@ -512,6 +494,7 @@ async function main() {
 
   // D2 team members
   await prisma.teamMember.createMany({
+    skipDuplicates: true,
     data: [
       { teamId: d2.id, userId: maartenTrainer.id, role: MemberRole.TRAINER },
       { teamId: d2.id, userId: d2Players.sBusstra.id, role: MemberRole.PLAYER, number: 1, position: 'Setter' },
@@ -529,6 +512,7 @@ async function main() {
 
   // D4 team members
   await prisma.teamMember.createMany({
+    skipDuplicates: true,
     data: [
       { teamId: d4.id, userId: maartenTrainer.id, role: MemberRole.TRAINER },
       { teamId: d4.id, userId: d4Players.levyAtsma.id, role: MemberRole.PLAYER, number: 1, position: 'Setter' },
@@ -545,6 +529,7 @@ async function main() {
 
   // Special Ladies team members
   await prisma.teamMember.createMany({
+    skipDuplicates: true,
     data: [
       { teamId: specialLadies.id, userId: maartenTrainer.id, role: MemberRole.TRAINER },
       { teamId: specialLadies.id, userId: specialLadiesPlayers.rixtAnnaBos.id, role: MemberRole.PLAYER, number: 1 },
@@ -560,6 +545,7 @@ async function main() {
 
   // MA1 team members
   await prisma.teamMember.createMany({
+    skipDuplicates: true,
     data: [
       { teamId: ma1.id, userId: justinTrainer.id, role: MemberRole.TRAINER },
       { teamId: ma1.id, userId: ma1Players.femkeAgricola.id, role: MemberRole.PLAYER, number: 1 },
@@ -573,6 +559,7 @@ async function main() {
 
   // MB1 team members
   await prisma.teamMember.createMany({
+    skipDuplicates: true,
     data: [
       { teamId: mb1.id, userId: peterTrainer.id, role: MemberRole.TRAINER },
       { teamId: mb1.id, userId: mbPlayers.tessDeVries.id, role: MemberRole.PLAYER, number: 1 },
@@ -589,6 +576,7 @@ async function main() {
 
   // MB2 team members (same players as MB1)
   await prisma.teamMember.createMany({
+    skipDuplicates: true,
     data: [
       { teamId: mb2.id, userId: maartenTrainer.id, role: MemberRole.TRAINER },
       { teamId: mb2.id, userId: mbPlayers.tessDeVries.id, role: MemberRole.PLAYER, number: 1 },
@@ -605,6 +593,7 @@ async function main() {
 
   // XC1 team members
   await prisma.teamMember.createMany({
+    skipDuplicates: true,
     data: [
       { teamId: xc1.id, userId: justinTrainer.id, role: MemberRole.TRAINER },
       { teamId: xc1.id, userId: xc1Players.elyseBekkema.id, role: MemberRole.PLAYER, number: 1 },
@@ -621,6 +610,7 @@ async function main() {
 
   // XC2 team members
   await prisma.teamMember.createMany({
+    skipDuplicates: true,
     data: [
       { teamId: xc2.id, userId: peterTrainer.id, role: MemberRole.TRAINER },
       { teamId: xc2.id, userId: xc2Players.emmaBouma.id, role: MemberRole.PLAYER, number: 1 },
@@ -633,7 +623,6 @@ async function main() {
       { teamId: xc2.id, userId: xc2Players.mykaVerhallen.id, role: MemberRole.PLAYER, number: 8 },
     ],
   })
-  }
 
   // Create exercises
   console.log('🏋️ Creating exercises...')
