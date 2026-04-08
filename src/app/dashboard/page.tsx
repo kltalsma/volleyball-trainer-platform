@@ -386,7 +386,7 @@ export default async function DashboardPage() {
           <div className="bg-white rounded-xl shadow-sm border p-6">
             <div className="flex items-center justify-between mb-3">
               <div className="flex-1">
-                <p className="text-sm font-medium text-gray-600">📋 Training Plans</p>
+                <p className="text-sm font-medium text-gray-600">📋 Trainings</p>
                 <p className="text-3xl font-bold text-gray-900 mt-2">
                   {myTrainingCount + teamTrainingCount}
                 </p>

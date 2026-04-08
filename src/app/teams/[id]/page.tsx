@@ -226,7 +226,7 @@ export default function TeamDetailPage() {
               <p className="text-2xl font-bold text-gray-900">{team._count.members}</p>
             </div>
             <div>
-              <h3 className="text-sm font-medium text-gray-500 mb-2">Training Plans</h3>
+              <h3 className="text-sm font-medium text-gray-500 mb-2">Trainings</h3>
               <p className="text-2xl font-bold text-gray-900">{team._count.workouts}</p>
             </div>
           </div>
@@ -242,7 +242,7 @@ export default function TeamDetailPage() {
         {/* Trainings Section */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">Training Plans</h2>
+            <h2 className="text-xl font-semibold text-gray-900">Trainings</h2>
             <Link
               href={`/trainings?teamId=${team.id}`}
               className="text-blue-600 hover:text-blue-700 text-sm"
@@ -253,12 +253,12 @@ export default function TeamDetailPage() {
 
           {team.workouts.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-gray-500 text-lg mb-4">No training plans yet</p>
+              <p className="text-gray-500 text-lg mb-4">No trainings yet</p>
               <Link
                 href={`/trainings/new?teamId=${team.id}`}
                 className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition"
               >
-                Create first training plan
+                Create first training
               </Link>
             </div>
           ) : (
@@ -499,7 +499,7 @@ function ScheduleTrainingModal({
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Training Plan (Optional)
+                Training (Optional)
               </label>
               <select
                 value={formData.workoutId}
@@ -514,7 +514,7 @@ function ScheduleTrainingModal({
                 ))}
               </select>
               <p className="text-xs text-gray-500 mt-1">
-                Select a training plan or create a custom training
+                Select a training or create a custom one
               </p>
             </div>
 

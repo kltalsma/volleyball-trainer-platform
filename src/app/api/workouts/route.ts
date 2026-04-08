@@ -19,20 +19,32 @@ export async function GET(request: Request) {
     const limit = parseInt(searchParams.get("limit") || "20")
     const skip = (page - 1) * limit
 
-    // Relaxed visibility: authenticated users can browse all workouts unless they explicitly
-    // scope to their own or public-only.
+    // Get the teams the current user belongs to
+    const userTeamMemberships = await prisma.teamMember.findMany({
+      where: { userId: session.user.id },
+      select: { teamId: true }
+    })
+    const userTeamIds = userTeamMemberships.map(m => m.teamId)
+
     let where: any = {}
 
     if (myWorkouts) {
+      // Only workouts created by this user
       where.creatorId = session.user.id
-    }
-
-    if (publicOnly) {
+    } else if (publicOnly) {
+      // Only public workouts
       where.isPublic = true
+    } else {
+      // Default "all" view: workouts created by this user OR belonging to their teams
+      where.OR = [
+        { creatorId: session.user.id },
+        ...(userTeamIds.length > 0 ? [{ teamId: { in: userTeamIds } }] : []),
+      ]
     }
 
     if (teamId) {
-      where.teamId = teamId
+      // Override with a specific team filter (still scoped to user's teams for non-admins)
+      where = { teamId }
     }
 
     if (search) {

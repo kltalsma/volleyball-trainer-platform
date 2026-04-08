@@ -223,10 +223,10 @@ export default async function AdminDashboard() {
           <div className="bg-white rounded-xl shadow-sm border p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Training Plans</p>
+                <p className="text-sm font-medium text-gray-600">Trainings</p>
                 <p className="text-3xl font-bold text-gray-900 mt-2">{totalWorkouts}</p>
                 <p className="text-xs text-gray-500 mt-2">
-                  {systemMetrics.publicWorkouts} public plans
+                  {systemMetrics.publicWorkouts} public
                 </p>
               </div>
               <div className="h-12 w-12 bg-orange-100 rounded-lg flex items-center justify-center">

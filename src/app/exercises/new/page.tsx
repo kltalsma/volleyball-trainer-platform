@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import DrawingCanvas from "@/components/drawing-canvas"
 
@@ -17,6 +17,8 @@ interface Category {
 
 export default function NewExercisePage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const returnTo = searchParams.get('returnTo')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [sports, setSports] = useState<Sport[]>([])
@@ -128,7 +130,7 @@ export default function NewExercisePage() {
         return
       }
 
-      router.push("/exercises")
+      router.push(returnTo || "/exercises")
       router.refresh()
     } catch (err) {
       console.error("Error creating exercise:", err)

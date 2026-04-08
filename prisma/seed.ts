@@ -1010,7 +1010,7 @@ async function main() {
               totalDuration: 90,
               startTime: sessionStart,
               endTime: sessionEnd,
-              isPublic: false,
+              isPublic: teamSessionNumber <= 3,
             },
           })
           workoutCount++

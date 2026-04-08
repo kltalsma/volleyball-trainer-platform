@@ -26,12 +26,16 @@ export async function GET(request: Request) {
     const limit = parseInt(searchParams.get("limit") || "20")
     const skip = (page - 1) * limit
 
-    const where: any = {
-      OR: [
-        { isPublic: true },
-        { creatorId: session.user.id }
-      ]
-    }
+    const isPrivileged = session.user.role === 'ADMIN' || session.user.role === 'TRAINER'
+
+    const where: any = isPrivileged
+      ? {}
+      : {
+          OR: [
+            { isPublic: true },
+            { creatorId: session.user.id }
+          ]
+        }
 
     if (myExercises) {
       where.creatorId = session.user.id

@@ -63,7 +63,7 @@ export default function Home() {
 
           <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
             <div className="text-4xl mb-4">📋</div>
-            <h3 className="text-xl font-bold text-gray-900 mb-3">Training Planner</h3>
+            <h3 className="text-xl font-bold text-gray-900 mb-3">Training Builder</h3>
             <p className="text-gray-600">
               Build complete training sessions by combining exercises with drag-and-drop.
             </p>
@@ -89,7 +89,7 @@ export default function Home() {
             <div className="text-4xl mb-4">📱</div>
             <h3 className="text-xl font-bold text-gray-900 mb-3">Mobile Ready</h3>
             <p className="text-gray-600">
-              Access your training plans on any device - desktop, tablet, or phone.
+              Access your trainings on any device - desktop, tablet, or phone.
             </p>
           </div>
 

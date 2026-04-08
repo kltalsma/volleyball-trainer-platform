@@ -295,7 +295,7 @@ export default function ScheduledTrainingDetailPage() {
                 )}
                 {training.workout && (
                   <div className="col-span-2">
-                    <p className="text-xs text-gray-500 mb-1">Training Plan</p>
+                    <p className="text-xs text-gray-500 mb-1">Training</p>
                     <Link
                       href={`/trainings/${training.workout.id}`}
                       className="text-sm font-medium text-blue-600 hover:text-blue-700"
@@ -310,7 +310,7 @@ export default function ScheduledTrainingDetailPage() {
             {/* Exercises */}
             {training.exercises && training.exercises.length > 0 && (
               <div className="bg-white rounded-lg shadow-sm p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-6">Training Plan</h2>
+                <h2 className="text-xl font-semibold text-gray-900 mb-6">Exercises</h2>
                 <div className="space-y-3">
                   {training.exercises.map((sessionExercise, index) => (
                     <Link

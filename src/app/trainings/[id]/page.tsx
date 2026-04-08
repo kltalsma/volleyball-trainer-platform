@@ -293,13 +293,13 @@ export default function TrainingDetailPage({ params }: { params: Promise<{ id: s
 
         {/* Exercises */}
         <div className="bg-white rounded-xl shadow-sm border p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">Training Plan</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-6">Exercises</h2>
           
           {exercises.length === 0 ? (
             <EmptyState
               icon="🏐"
               title="No exercises yet"
-              description="Start building your training plan by adding exercises. You can choose from your existing exercises or create new ones."
+              description="Start building this training by adding exercises. You can choose from your existing exercises or create new ones."
               actionLabel="Add Exercises"
               actionHref={`/trainings/${unwrappedParams.id}/edit`}
             />

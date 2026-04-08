@@ -51,6 +51,7 @@ export default function EditTrainingPage({ params }: { params: Promise<{ id: str
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
   const [showExercisePicker, setShowExercisePicker] = useState(false)
+  const [exerciseSearch, setExerciseSearch] = useState('')
 
   const [formData, setFormData] = useState({
     title: "",
@@ -113,7 +114,7 @@ export default function EditTrainingPage({ params }: { params: Promise<{ id: str
 
   async function fetchAvailableExercises() {
     try {
-      const response = await fetch("/api/exercises?limit=100")
+      const response = await fetch("/api/exercises?limit=200")
       if (response.ok) {
         const data = await response.json()
         setAvailableExercises(data.exercises || [])
@@ -539,16 +540,36 @@ export default function EditTrainingPage({ params }: { params: Promise<{ id: str
 
             {/* Exercise Picker */}
             {showExercisePicker && (
-              <div className="mb-6 p-4 bg-gray-50 rounded-lg border max-h-96 overflow-y-auto">
-                <h3 className="font-medium text-gray-900 mb-3">Select an exercise:</h3>
-                <div className="space-y-2">
+              <div className="mb-6 p-4 bg-gray-50 rounded-lg border">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-medium text-gray-900">Select an exercise:</h3>
+                  <Link
+                    href={`/exercises/new?returnTo=/trainings/${unwrappedParams.id}/edit`}
+                    className="text-sm px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+                  >
+                    + Create New
+                  </Link>
+                </div>
+                <input
+                  type="text"
+                  placeholder="Search exercises..."
+                  value={exerciseSearch}
+                  onChange={(e) => setExerciseSearch(e.target.value)}
+                  className="w-full mb-3 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <div className="space-y-2 max-h-80 overflow-y-auto">
                   {availableExercises
                     .filter(ex => !workoutExercises.find(we => we.exerciseId === ex.id))
+                    .filter(ex =>
+                      !exerciseSearch ||
+                      ex.title.toLowerCase().includes(exerciseSearch.toLowerCase()) ||
+                      (ex.category?.name || '').toLowerCase().includes(exerciseSearch.toLowerCase())
+                    )
                     .map((exercise) => (
                       <button
                         key={exercise.id}
                         type="button"
-                        onClick={() => addExercise(exercise)}
+                        onClick={() => { addExercise(exercise); setExerciseSearch('') }}
                         className="w-full text-left p-3 bg-white rounded-lg border hover:border-blue-300 hover:shadow-sm transition"
                       >
                         <div className="flex justify-between items-start">
@@ -571,6 +592,11 @@ export default function EditTrainingPage({ params }: { params: Promise<{ id: str
                         </div>
                       </button>
                     ))}
+                  {availableExercises.filter(ex => !workoutExercises.find(we => we.exerciseId === ex.id)).length === 0 && (
+                    <p className="text-sm text-gray-500 text-center py-4">
+                      All exercises already added to this training.
+                    </p>
+                  )}
                 </div>
               </div>
             )}

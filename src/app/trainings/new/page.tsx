@@ -38,6 +38,7 @@ export default function NewTrainingPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [showExercisePicker, setShowExercisePicker] = useState(false)
+  const [exerciseSearch, setExerciseSearch] = useState('')
   
   const [formData, setFormData] = useState({
     title: "",
@@ -89,7 +90,7 @@ export default function NewTrainingPage() {
 
   async function fetchExercises() {
     try {
-      const response = await fetch("/api/exercises?limit=100")
+      const response = await fetch("/api/exercises?limit=200")
       if (response.ok) {
         const data = await response.json()
         setExercises(data.exercises || [])
@@ -482,11 +483,27 @@ export default function NewTrainingPage() {
 
             {/* Exercise Picker */}
             {showExercisePicker && (
-              <div className="mb-6 p-4 bg-gray-50 rounded-lg border max-h-96 overflow-y-auto">
-                <h3 className="font-medium text-gray-900 mb-3">Select an exercise:</h3>
-                <div className="space-y-2">
+              <div className="mb-6 p-4 bg-gray-50 rounded-lg border">
+                <div className="flex items-center gap-2 mb-3">
+                  <input
+                    type="text"
+                    placeholder="Search exercises..."
+                    value={exerciseSearch}
+                    onChange={(e) => setExerciseSearch(e.target.value)}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 text-sm"
+                    autoFocus
+                  />
+                  <a
+                    href={`/exercises/new?returnTo=/trainings/new`}
+                    className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm whitespace-nowrap"
+                  >
+                    + Create New
+                  </a>
+                </div>
+                <div className="space-y-2 max-h-80 overflow-y-auto">
                   {exercises
                     .filter(ex => !selectedExercises.find(sel => sel.exerciseId === ex.id))
+                    .filter(ex => exerciseSearch === '' || ex.title.toLowerCase().includes(exerciseSearch.toLowerCase()) || ex.category?.name.toLowerCase().includes(exerciseSearch.toLowerCase()))
                     .map((exercise) => (
                       <button
                         key={exercise.id}
