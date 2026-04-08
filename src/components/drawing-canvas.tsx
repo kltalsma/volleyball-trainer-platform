@@ -174,6 +174,9 @@ export default function DrawingCanvas({ onChange, initialDiagram }: DrawingCanva
     async function init() {
       const fabric = await import("fabric")
       if (!canvasElRef.current || cancelled) return
+      // Fabric v7: register custom properties so they survive toJSON / loadFromJSON
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ;(fabric.FabricObject as any).customProperties = ['data', 'excludeFromExport']
 
       fc = new fabric.Canvas(canvasElRef.current, {
         width: CANVAS_WIDTH,
@@ -255,12 +258,17 @@ export default function DrawingCanvas({ onChange, initialDiagram }: DrawingCanva
           fc.add(new fabric2.Path("M 0 -20 L 14 14 L -14 14 Z", { fill: toolColor, stroke: "#000", strokeWidth: 1, left: x, top: y, originX: "center", originY: "center", data: { type: "cone", id: nextUid() } } as any))
 
         } else if (t === "ball") {
+          const ballBody = new fabric2.Circle({ radius: 14, fill: "#f0f0f0", stroke: "#888", strokeWidth: 1.5, originX: "center", originY: "center" })
+          const seam1 = new fabric2.Path("M -14 0 Q 0 -8 14 0", { fill: "transparent", stroke: "#aaa", strokeWidth: 1.5, originX: "center", originY: "center" })
+          const seam2 = new fabric2.Path("M -14 0 Q 0 8 14 0", { fill: "transparent", stroke: "#aaa", strokeWidth: 1.5, originX: "center", originY: "center" })
+          const seam3 = new fabric2.Path("M 0 -14 Q -8 0 0 14", { fill: "transparent", stroke: "#aaa", strokeWidth: 1.5, originX: "center", originY: "center" })
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          fc.add(new fabric2.Circle({ left: x - 12, top: y - 12, radius: 12, fill: "#f5e642", stroke: "#555", strokeWidth: 2, data: { type: "ball", id: nextUid() } } as any))
+          fc.add(new fabric2.Group([ballBody, seam1, seam2, seam3], { left: x - 14, top: y - 14, data: { type: "ball", id: nextUid() } } as any))
 
         } else if (t === "zone") {
+          // Zone is always light-blue with blue dashed border
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          fc.add(new fabric2.Rect({ left: x - 50, top: y - 30, width: 100, height: 60, fill: c + "33", stroke: c, strokeWidth: 2, data: { type: "zone", id: nextUid() } } as any))
+          fc.add(new fabric2.Rect({ left: x - 50, top: y - 30, width: 100, height: 60, fill: "rgba(59,130,246,0.15)", stroke: "#3B82F6", strokeWidth: 2, strokeDashArray: [6, 3], data: { type: "zone", id: nextUid() } } as any))
 
         } else if (t === "text") {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -423,12 +431,17 @@ export default function DrawingCanvas({ onChange, initialDiagram }: DrawingCanva
       fc.add(new fabric.Path("M 0 -20 L 14 14 L -14 14 Z", { fill: toolColor, stroke: "#000", strokeWidth: 1, left: x, top: y, originX: "center", originY: "center", data: { type: "cone", id: nextUid() } } as any))
 
     } else if (tool === "ball") {
+      const ballBody = new fabric.Circle({ radius: 14, fill: "#f0f0f0", stroke: "#888", strokeWidth: 1.5, originX: "center", originY: "center" })
+      const seam1 = new fabric.Path("M -14 0 Q 0 -8 14 0", { fill: "transparent", stroke: "#aaa", strokeWidth: 1.5, originX: "center", originY: "center" })
+      const seam2 = new fabric.Path("M -14 0 Q 0 8 14 0", { fill: "transparent", stroke: "#aaa", strokeWidth: 1.5, originX: "center", originY: "center" })
+      const seam3 = new fabric.Path("M 0 -14 Q -8 0 0 14", { fill: "transparent", stroke: "#aaa", strokeWidth: 1.5, originX: "center", originY: "center" })
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      fc.add(new fabric.Circle({ left: x - 12, top: y - 12, radius: 12, fill: "#f5e642", stroke: "#555", strokeWidth: 2, data: { type: "ball", id: nextUid() } } as any))
+      fc.add(new fabric.Group([ballBody, seam1, seam2, seam3], { left: x - 14, top: y - 14, data: { type: "ball", id: nextUid() } } as any))
 
     } else if (tool === "zone") {
+      // Zone is always light-blue with blue dashed border
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      fc.add(new fabric.Rect({ left: x - 50, top: y - 30, width: 100, height: 60, fill: color + "33", stroke: color, strokeWidth: 2, data: { type: "zone", id: nextUid() } } as any))
+      fc.add(new fabric.Rect({ left: x - 50, top: y - 30, width: 100, height: 60, fill: "rgba(59,130,246,0.15)", stroke: "#3B82F6", strokeWidth: 2, strokeDashArray: [6, 3], data: { type: "zone", id: nextUid() } } as any))
 
     } else if (tool === "text") {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -573,15 +586,16 @@ export default function DrawingCanvas({ onChange, initialDiagram }: DrawingCanva
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const getCenters = useCallback((frame: any): Record<string, { x: number; y: number }> => {
     const result: Record<string, { x: number; y: number }> = {}
-    if (!frame?.objects) return result
+    if (!frame?.objects) { console.debug('[arrows] getCenters: no objects in frame', JSON.stringify(frame)?.slice(0,100)); return result }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     for (const obj of frame.objects) {
       const id = obj.data?.id
-      if (!id) continue
+      if (!id) { console.debug('[arrows] object has no data.id:', obj.type, JSON.stringify(obj.data)); continue }
       const cx = (obj.left ?? 0) + (obj.width ?? 0) / 2
       const cy = (obj.top ?? 0) + (obj.height ?? 0) / 2
       result[id] = { x: cx, y: cy }
     }
+    console.debug('[arrows] getCenters result:', JSON.stringify(result))
     return result
   }, [])
 
@@ -592,14 +606,16 @@ export default function DrawingCanvas({ onChange, initialDiagram }: DrawingCanva
   ) => {
     const fc = fabricRef.current
     if (!fc) return
+    console.debug('[arrows] drawMovementArrows called from:', JSON.stringify(fromCenters), 'to:', JSON.stringify(toCenters))
     const fabric = await import("fabric")
     for (const id of Object.keys(fromCenters)) {
       const from = fromCenters[id]
       const to = toCenters[id]
-      if (!to) continue
+      if (!to) { console.debug('[arrows] no matching object in next frame for id', id); continue }
       const dx = to.x - from.x
       const dy = to.y - from.y
       const dist = Math.sqrt(dx * dx + dy * dy)
+      console.debug(`[arrows] id=${id} dist=${dist.toFixed(1)} from=(${from.x.toFixed(0)},${from.y.toFixed(0)}) to=(${to.x.toFixed(0)},${to.y.toFixed(0)}) skip=${dist < 8}`)
       if (dist < 8) continue  // ignore negligible movement
 
       const angle = Math.atan2(dy, dx) * 180 / Math.PI
@@ -637,9 +653,18 @@ export default function DrawingCanvas({ onChange, initialDiagram }: DrawingCanva
     arrows.forEach((o: any) => fc.remove(o))
   }, [])
 
-  const handleStop = useCallback(() => {
+  const handleStop = useCallback(async () => {
     if (playIntervalRef.current) { clearInterval(playIntervalRef.current); playIntervalRef.current = null }
-    clearMovementArrows()
+    const fc = fabricRef.current
+    if (fc) {
+      isLoadingRef.current = true
+      clearMovementArrows()
+      await fc.loadFromJSON(framesRef.current[0] ?? {})
+      if (applyBgRef.current) await applyBgRef.current()
+      isLoadingRef.current = false
+    }
+    setCurrentFrame(0)
+    currentFrameRef.current = 0
     setIsPlaying(false)
   }, [clearMovementArrows])
 
@@ -663,10 +688,12 @@ export default function DrawingCanvas({ onChange, initialDiagram }: DrawingCanva
       setCurrentFrame(frameIdx)
       currentFrameRef.current = frameIdx
 
-      // Draw movement arrows showing where objects go in the next frame
+      // Draw movement arrows — suppress commitFrame during arrow drawing
       if (frameIdx < frames.length - 1) {
         const currentCenters = getCenters(frames[frameIdx])
+        isLoadingRef.current = true
         await drawMovementArrows(currentCenters, nextCenters)
+        isLoadingRef.current = false
       }
     }
     playFrame(0)
@@ -677,7 +704,17 @@ export default function DrawingCanvas({ onChange, initialDiagram }: DrawingCanva
         setTimeout(() => {
           if (playIntervalRef.current) clearInterval(playIntervalRef.current)
           playIntervalRef.current = null
-          clearMovementArrows()
+          const fc2 = fabricRef.current
+          if (fc2) {
+            isLoadingRef.current = true
+            clearMovementArrows()
+            fc2.loadFromJSON(framesRef.current[0] ?? {}).then(async () => {
+              if (applyBgRef.current) await applyBgRef.current()
+              isLoadingRef.current = false
+            })
+          }
+          setCurrentFrame(0)
+          currentFrameRef.current = 0
           setIsPlaying(false)
         }, 800)
       }
