@@ -26,13 +26,11 @@ export async function POST(request: Request) {
       )
     }
 
-    // Verify the workout exists and user has permission
+    // Verify the workout exists (all authenticated users can add)
     const workout = await prisma.workout.findUnique({
       where: { id: workoutId },
       select: { 
-        id: true, 
-        creatorId: true,
-        teamId: true
+        id: true
       }
     })
 
@@ -41,36 +39,6 @@ export async function POST(request: Request) {
         { error: "Workout not found" },
         { status: 404 }
       )
-    }
-
-    // Check if user is ADMIN, workout creator, or team member
-    const currentUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { role: true }
-    })
-    const isAdmin = currentUser?.role === 'ADMIN'
-
-    if (!isAdmin && workout.creatorId !== session.user.id) {
-      if (workout.teamId) {
-        const teamMember = await prisma.teamMember.findFirst({
-          where: {
-            teamId: workout.teamId,
-            userId: session.user.id
-          }
-        })
-        
-        if (!teamMember) {
-          return NextResponse.json(
-            { error: "You don't have permission to modify this workout" },
-            { status: 403 }
-          )
-        }
-      } else {
-        return NextResponse.json(
-          { error: "You don't have permission to modify this workout" },
-          { status: 403 }
-        )
-      }
     }
 
     // Verify the exercise exists
@@ -135,14 +103,11 @@ export async function GET(request: Request) {
       )
     }
 
-    // Verify the workout exists and user has permission to view it
+    // Verify the workout exists (all authenticated users can view)
     const workout = await prisma.workout.findUnique({
       where: { id: workoutId },
       select: { 
-        id: true, 
-        creatorId: true,
-        isPublic: true,
-        teamId: true
+        id: true
       }
     })
 
@@ -150,38 +115,6 @@ export async function GET(request: Request) {
       return NextResponse.json(
         { error: "Workout not found" },
         { status: 404 }
-      )
-    }
-
-    // Check if user is ADMIN or has permission to view
-    const currentUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { role: true }
-    })
-    const isAdmin = currentUser?.role === 'ADMIN'
-
-    const hasPermission = isAdmin || 
-                         workout.isPublic || 
-                         workout.creatorId === session.user.id
-
-    if (!hasPermission && workout.teamId) {
-      const teamMember = await prisma.teamMember.findFirst({
-        where: {
-          teamId: workout.teamId,
-          userId: session.user.id
-        }
-      })
-      
-      if (!teamMember) {
-        return NextResponse.json(
-          { error: "You don't have permission to view this workout" },
-          { status: 403 }
-        )
-      }
-    } else if (!hasPermission) {
-      return NextResponse.json(
-        { error: "You don't have permission to view this workout" },
-        { status: 403 }
       )
     }
 
@@ -214,6 +147,12 @@ export async function GET(request: Request) {
         order: "asc"
       }
     })
+
+    const currentUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: true }
+    })
+    const isAdmin = currentUser?.role === 'ADMIN'
 
     // Filter out private exercises that don't belong to the current user (unless ADMIN)
     // Replace them with a placeholder to maintain order

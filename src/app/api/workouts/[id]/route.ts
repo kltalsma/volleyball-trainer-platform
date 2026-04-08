@@ -58,20 +58,6 @@ export async function GET(
       )
     }
 
-    // Check access rights - ADMIN can view all workouts
-    const currentUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { role: true }
-    })
-    const isAdmin = currentUser?.role === 'ADMIN'
-    
-    if (!isAdmin && !workout.isPublic && workout.creatorId !== session.user.id) {
-      return NextResponse.json(
-        { error: "Access denied" },
-        { status: 403 }
-      )
-    }
-
     return NextResponse.json(workout)
   } catch (error) {
     console.error("Error fetching workout:", error)

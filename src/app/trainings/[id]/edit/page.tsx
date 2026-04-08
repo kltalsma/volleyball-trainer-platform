@@ -101,7 +101,7 @@ export default function EditTrainingPage({ params }: { params: Promise<{ id: str
 
   async function fetchTeams() {
     try {
-      const response = await fetch("/api/teams?myTeams=true")
+      const response = await fetch("/api/teams")
       if (response.ok) {
         const data = await response.json()
         setTeams(data.teams || [])

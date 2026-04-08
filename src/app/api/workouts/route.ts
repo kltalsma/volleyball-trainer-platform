@@ -19,46 +19,16 @@ export async function GET(request: Request) {
     const limit = parseInt(searchParams.get("limit") || "20")
     const skip = (page - 1) * limit
 
-    // Check if user is ADMIN
-    const currentUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { role: true }
-    })
-    const isAdmin = currentUser?.role === 'ADMIN'
-
-    // ADMIN can see all workouts, others follow normal filtering rules
+    // Relaxed visibility: authenticated users can browse all workouts unless they explicitly
+    // scope to their own or public-only.
     let where: any = {}
-
-    if (isAdmin) {
-      // ADMIN sees all workouts unless specifically filtered
-      where = {}
-    } else {
-      // Default: show user's own workouts and workouts from teams they're members of
-      where = {
-        OR: [
-          { creatorId: session.user.id },
-          {
-            team: {
-              members: {
-                some: {
-                  userId: session.user.id
-                }
-              }
-            }
-          }
-        ]
-      }
-    }
 
     if (myWorkouts) {
       where.creatorId = session.user.id
-      delete where.OR
     }
 
-    // Show only public workouts when explicitly requested (unless ADMIN viewing all)
-    if (publicOnly && !isAdmin) {
+    if (publicOnly) {
       where.isPublic = true
-      delete where.OR
     }
 
     if (teamId) {
@@ -66,23 +36,13 @@ export async function GET(request: Request) {
     }
 
     if (search) {
-      // Store existing OR conditions if any
-      const existingOr = where.OR
       where.AND = where.AND || []
-      
-      // Add search condition as AND with existing filters
       where.AND.push({
         OR: [
           { title: { contains: search, mode: "insensitive" } },
           { description: { contains: search, mode: "insensitive" } }
         ]
       })
-      
-      // If we had OR conditions, add them to AND as well
-      if (existingOr) {
-        where.AND.push({ OR: existingOr })
-        delete where.OR
-      }
     }
 
     const [workouts, total] = await Promise.all([
