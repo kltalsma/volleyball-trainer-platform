@@ -58,6 +58,27 @@ export async function GET(
       )
     }
 
+    // Check access: admin, creator, or member of the workout's team
+    const currentUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: true }
+    })
+    const isAdmin = currentUser?.role === 'ADMIN'
+    const isCreator = workout.creatorId === session.user.id
+    const isPublic = workout.isPublic
+
+    if (!isAdmin && !isCreator && !isPublic) {
+      const teamMember = workout.teamId
+        ? await prisma.teamMember.findFirst({
+            where: { teamId: workout.teamId, userId: session.user.id }
+          })
+        : null
+
+      if (!teamMember) {
+        return NextResponse.json({ error: "Access denied" }, { status: 403 })
+      }
+    }
+
     return NextResponse.json(workout)
   } catch (error) {
     console.error("Error fetching workout:", error)

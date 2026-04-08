@@ -71,6 +71,22 @@ export async function GET(
               }
             }
           }
+        },
+        exercises: {
+          include: {
+            exercise: {
+              select: {
+                id: true,
+                title: true,
+                description: true,
+                duration: true,
+                difficulty: true,
+              }
+            }
+          },
+          orderBy: {
+            order: 'asc'
+          }
         }
       }
     })

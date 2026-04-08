@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
 import { format } from "date-fns"
+import { useSession } from "next-auth/react"
 import TrainingCalendar from "@/components/TrainingCalendar"
 
 interface Training {
@@ -82,6 +83,7 @@ interface Team {
 export default function TeamDetailPage() {
   const params = useParams()
   const router = useRouter()
+  const { data: session } = useSession()
   const [team, setTeam] = useState<Team | null>(null)
   const [scheduledTrainings, setScheduledTrainings] = useState<ScheduledTraining[]>([])
   const [loading, setLoading] = useState(true)
@@ -163,6 +165,13 @@ export default function TeamDetailPage() {
     )
   }
 
+  const currentUserId = session?.user?.id
+  const isAdmin = (session?.user as any)?.role === 'ADMIN'
+  const currentMemberRoles = team.members
+    .filter(m => m.user.id === currentUserId)
+    .map(m => m.role)
+  const canEditTeam = isAdmin || currentMemberRoles.some(r => r === 'COACH' || r === 'TRAINER')
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       {/* Header */}
@@ -195,12 +204,14 @@ export default function TeamDetailPage() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Link
-                href={`/teams/${params.id}/edit`}
-                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition"
-              >
-                Edit Team
-              </Link>
+              {canEditTeam && (
+                <Link
+                  href={`/teams/${params.id}/edit`}
+                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition"
+                >
+                  Edit Team
+                </Link>
+              )}
               <Link
                 href={`/trainings/new?teamId=${team.id}`}
                 className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"

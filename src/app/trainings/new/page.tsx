@@ -78,7 +78,6 @@ export default function NewTrainingPage() {
       const response = await fetch("/api/teams")
       if (response.ok) {
         const data = await response.json()
-        console.log("Teams loaded:", data.teams)
         setTeams(data.teams || [])
       } else {
         console.error("Failed to fetch teams:", response.status)
@@ -261,16 +260,11 @@ export default function NewTrainingPage() {
                 id="title"
                 type="text"
                 required
-                value={formData.title}
-                onChange={(e) => {
-                  console.log("Title input changed:", e.target.value)
-                  setFormData({ ...formData, title: e.target.value })
-                }}
-                onFocus={() => console.log("Title input focused")}
-                onKeyDown={(e) => console.log("Key pressed:", e.key)}
-                readOnly={false}
-                disabled={false}
-                autoComplete="off"
+              value={formData.title}
+              onChange={(e) => {
+                setFormData({ ...formData, title: e.target.value })
+              }}
+              autoComplete="off"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
                 placeholder="e.g., Advanced Serving Practice"
                 style={{ pointerEvents: 'auto', userSelect: 'text' }}
@@ -285,15 +279,11 @@ export default function NewTrainingPage() {
               <textarea
                 id="description"
                 rows={3}
-                value={formData.description}
-                onChange={(e) => {
-                  console.log("Description changed:", e.target.value)
-                  setFormData({ ...formData, description: e.target.value })
-                }}
-                onFocus={() => console.log("Description focused")}
-                readOnly={false}
-                disabled={false}
-                autoComplete="off"
+              value={formData.description}
+              onChange={(e) => {
+                setFormData({ ...formData, description: e.target.value })
+              }}
+              autoComplete="off"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
                 placeholder="Training goals and focus areas..."
                 style={{ pointerEvents: 'auto', userSelect: 'text' }}
@@ -310,7 +300,6 @@ export default function NewTrainingPage() {
                   id="team"
                   value={formData.teamId}
                   onChange={(e) => {
-                    console.log("Team dropdown changed:", e.target.value)
                     setFormData({ ...formData, teamId: e.target.value })
                   }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 cursor-pointer appearance-none pr-10"
@@ -321,19 +310,8 @@ export default function NewTrainingPage() {
                       {team.name}
                     </option>
                   ))}
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                  <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
-                  </svg>
-                </div>
+              </select>
               </div>
-              {/* Debug info */}
-              {process.env.NODE_ENV === 'development' && (
-                <p className="text-xs text-gray-500 mt-1">
-                  Teams loaded: {teams.length} | Selected: {formData.teamId || 'none'}
-                </p>
-              )}
             </div>
 
             {/* Time Fields */}
@@ -347,7 +325,6 @@ export default function NewTrainingPage() {
                   type="datetime-local"
                   value={formData.startTime}
                   onChange={(e) => {
-                    console.log("Start time changed:", e.target.value)
                     setFormData({ ...formData, startTime: e.target.value })
                   }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 cursor-pointer"
@@ -365,7 +342,6 @@ export default function NewTrainingPage() {
                   type="datetime-local"
                   value={formData.endTime}
                   onChange={(e) => {
-                    console.log("End time changed:", e.target.value)
                     setFormData({ ...formData, endTime: e.target.value })
                   }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 cursor-pointer"

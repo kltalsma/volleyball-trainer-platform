@@ -74,11 +74,18 @@ export async function GET(request: Request) {
     }
 
     if (search) {
-      where.OR = [
-        { title: { contains: search, mode: "insensitive" } },
-        { description: { contains: search, mode: "insensitive" } },
+      const searchFilter = [
+        { title: { contains: search, mode: "insensitive" as const } },
+        { description: { contains: search, mode: "insensitive" as const } },
         { tags: { has: search } }
       ]
+      if (where.OR) {
+        // Combine existing visibility OR with search using AND
+        where.AND = [{ OR: where.OR }, { OR: searchFilter }]
+        delete where.OR
+      } else {
+        where.OR = searchFilter
+      }
     }
 
     const [exercises, total] = await Promise.all([

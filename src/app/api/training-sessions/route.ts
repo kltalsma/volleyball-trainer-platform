@@ -159,20 +159,28 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if user is a member of the team
-    const teamMember = await prisma.teamMember.findFirst({
-      where: {
-        teamId,
-        userId: user.id,
-        role: { in: ['COACH', 'ASSISTANT_COACH'] }
-      }
+    // Check if user is a member of the team (coach) or admin
+    const currentUser = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { role: true }
     })
+    const isAdmin = currentUser?.role === 'ADMIN'
 
-    if (!teamMember) {
-      return NextResponse.json(
-        { error: 'You must be a coach of this team to create training sessions' },
-        { status: 403 }
-      )
+    if (!isAdmin) {
+      const teamMember = await prisma.teamMember.findFirst({
+        where: {
+          teamId,
+          userId: user.id,
+          role: { in: ['COACH', 'ASSISTANT_COACH'] }
+        }
+      })
+
+      if (!teamMember) {
+        return NextResponse.json(
+          { error: 'You must be a coach of this team to create training sessions' },
+          { status: 403 }
+        )
+      }
     }
 
     // Create the training session

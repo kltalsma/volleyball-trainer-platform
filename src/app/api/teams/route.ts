@@ -13,30 +13,23 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const myTeams = searchParams.get("myTeams") === "true"
 
-    // Debug logging
-    console.log('=== /api/teams GET ===')
-    console.log('Session user ID:', session.user.id)
-    console.log('Session user email:', session.user.email)
-    console.log('myTeams filter:', myTeams)
-
-    // Check if user is ADMIN
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { role: true }
     })
     const isAdmin = user?.role === 'ADMIN'
-    console.log('Is ADMIN:', isAdmin)
 
     const where: any = {}
 
-    // ADMIN users can see all teams, others only see their teams
-    if (myTeams && !isAdmin) {
+    if (isAdmin && !myTeams) {
+      // Admin with no myTeams filter: see all teams
+    } else {
+      // All non-admins, or admins explicitly filtering myTeams, only see their own teams
       where.members = {
         some: {
           userId: session.user.id
         }
       }
-      console.log('Where clause:', JSON.stringify(where, null, 2))
     }
 
     const teams = await prisma.team.findMany({
