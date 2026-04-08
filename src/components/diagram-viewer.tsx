@@ -2,124 +2,89 @@
 
 import { useRef, useEffect } from "react"
 
-interface Point {
-  x: number
-  y: number
-}
-
-interface DrawingElement {
-  type: "line" | "arrow" | "circle" | "player"
-  points: Point[]
-  color: string
-  label?: string
-}
-
 interface DiagramViewerProps {
   diagram: string
 }
 
+const CANVAS_WIDTH = 900
+const CANVAS_HEIGHT = 450
+
 export default function DiagramViewer({ diagram }: DiagramViewerProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const canvasElRef = useRef<HTMLCanvasElement>(null)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const fabricRef = useRef<any>(null)
 
   useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas || !diagram) return
+    if (!diagram || !canvasElRef.current) return
 
-    const ctx = canvas.getContext("2d")
-    if (!ctx) return
+    let cancelled = false
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let fc: any = null
 
-    // Load court image
-    const img = new Image()
-    img.src = "/volleyball-court.jpg"
-    img.onload = () => {
-      // Draw court
-      ctx.drawImage(img, 0, 0, 800, 400)
+    async function init() {
+      const fabric = await import("fabric")
+      if (cancelled || !canvasElRef.current) return
 
-      // Draw diagram elements
-      try {
-        const elements: DrawingElement[] = JSON.parse(diagram)
-        elements.forEach(element => {
-          ctx.strokeStyle = element.color
-          ctx.fillStyle = element.color
-          ctx.lineWidth = 3
+      fc = new fabric.StaticCanvas(canvasElRef.current, {
+        width: CANVAS_WIDTH,
+        height: CANVAS_HEIGHT,
+      })
+      fabricRef.current = fc
 
-          if (element.type === "line" && element.points.length >= 2) {
-            ctx.beginPath()
-            ctx.moveTo(element.points[0].x, element.points[0].y)
-            for (let i = 1; i < element.points.length; i++) {
-              ctx.lineTo(element.points[i].x, element.points[i].y)
-            }
-            ctx.stroke()
-          } else if (element.type === "arrow" && element.points.length >= 2) {
-            const start = element.points[0]
-            const end = element.points[element.points.length - 1]
-            
-            ctx.beginPath()
-            ctx.moveTo(start.x, start.y)
-            ctx.lineTo(end.x, end.y)
-            ctx.stroke()
-            
-            const angle = Math.atan2(end.y - start.y, end.x - start.x)
-            const headLength = 15
-            
-            ctx.beginPath()
-            ctx.moveTo(end.x, end.y)
-            ctx.lineTo(
-              end.x - headLength * Math.cos(angle - Math.PI / 6),
-              end.y - headLength * Math.sin(angle - Math.PI / 6)
-            )
-            ctx.moveTo(end.x, end.y)
-            ctx.lineTo(
-              end.x - headLength * Math.cos(angle + Math.PI / 6),
-              end.y - headLength * Math.sin(angle + Math.PI / 6)
-            )
-            ctx.stroke()
-          } else if (element.type === "circle" && element.points.length >= 2) {
-            const center = element.points[0]
-            const edge = element.points[element.points.length - 1]
-            const radius = Math.sqrt(
-              Math.pow(edge.x - center.x, 2) + Math.pow(edge.y - center.y, 2)
-            )
-            
-            ctx.beginPath()
-            ctx.arc(center.x, center.y, radius, 0, 2 * Math.PI)
-            ctx.stroke()
-          } else if (element.type === "player" && element.points.length >= 1) {
-            const point = element.points[0]
-            
-            ctx.beginPath()
-            ctx.arc(point.x, point.y, 15, 0, 2 * Math.PI)
-            ctx.fill()
-            
-            if (element.label) {
-              ctx.fillStyle = "#FFFFFF"
-              ctx.font = "bold 12px sans-serif"
-              ctx.textAlign = "center"
-              ctx.textBaseline = "middle"
-              ctx.fillText(element.label, point.x, point.y)
-            }
-          }
+      // Court background
+      fabric.FabricImage.fromURL("/volleyball-court.jpg").then((img: any) => {
+        if (!fc || cancelled) return
+        img.set({
+          left: 0,
+          top: 0,
+          scaleX: CANVAS_WIDTH / (img.width || CANVAS_WIDTH),
+          scaleY: CANVAS_HEIGHT / (img.height || CANVAS_HEIGHT),
+          selectable: false,
+          evented: false,
         })
-      } catch (err) {
-        console.error("Failed to render diagram:", err)
+        fc.backgroundImage = img
+        fc.renderAll()
+      })
+
+      try {
+        const parsed = JSON.parse(diagram)
+
+        if (parsed && Array.isArray(parsed.frames) && parsed.frames.length > 0) {
+          // New Fabric.js format
+          const frameIdx = parsed.currentFrame ?? 0
+          const frameData = parsed.frames[frameIdx] ?? parsed.frames[0]
+          await fc.loadFromJSON(frameData)
+          fc.renderAll()
+        } else {
+          // Old raw-canvas format — silently ignore, background still shows
+        }
+      } catch {
+        // Parse error — show empty court
       }
+    }
+
+    init()
+
+    return () => {
+      cancelled = true
+      if (fc) {
+        try { fc.dispose() } catch { /* ignore */ }
+      }
+      fabricRef.current = null
     }
   }, [diagram])
 
   if (!diagram) {
     return (
-      <div className="bg-gray-100 rounded-lg p-8 text-center text-gray-500">
+      <div className="bg-gray-100 rounded-lg p-8 text-center text-gray-500 text-sm">
         No diagram available
       </div>
     )
   }
 
   return (
-    <canvas
-      ref={canvasRef}
-      width={800}
-      height={400}
-      className="border border-gray-300 rounded-lg"
-    />
+    <div className="border border-gray-300 rounded-lg overflow-hidden" style={{ width: CANVAS_WIDTH, maxWidth: "100%" }}>
+      <canvas ref={canvasElRef} />
+    </div>
   )
 }

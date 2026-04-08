@@ -2,356 +2,651 @@
 
 import { useRef, useState, useEffect, useCallback } from "react"
 
-interface Point {
-  x: number
-  y: number
-}
-
-interface DrawingElement {
-  type: "line" | "arrow" | "circle" | "player" | "volleyball" | "pylon" | "net" | "target" | "bench"
-  points: Point[]
-  color: string
-  label?: string
-}
-
 interface DrawingCanvasProps {
   onChange: (diagram: string) => void
   initialDiagram?: string
 }
 
+type ToolType =
+  | "select"
+  | "player"
+  | "opponent"
+  | "cone"
+  | "ball"
+  | "net"
+  | "zone"
+  | "text"
+  | "arrow"
+  | "curved-arrow"
+  | "dashed-line"
+  | "line"
+
+const CANVAS_WIDTH = 900
+const CANVAS_HEIGHT = 450
+
+function serializeDiagram(frames: object[], currentFrame: number): string {
+  return JSON.stringify({ frames, currentFrame })
+}
+
 export default function DrawingCanvas({ onChange, initialDiagram }: DrawingCanvasProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const canvasElRef = useRef<HTMLCanvasElement>(null)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const fabricRef = useRef<any>(null)
   const onChangeRef = useRef(onChange)
-  const [isDrawing, setIsDrawing] = useState(false)
-  const [tool, setTool] = useState<"line" | "arrow" | "circle" | "player">("line")
+  const isLoadingRef = useRef(false)
+
+  const [tool, setTool] = useState<ToolType>("select")
   const [color, setColor] = useState("#3B82F6")
-  const [elements, setElements] = useState<DrawingElement[]>([])
-  const [currentPoints, setCurrentPoints] = useState<Point[]>([])
-  const [courtImage, setCourtImage] = useState<HTMLImageElement | null>(null)
-  
-  // Keep onChange ref updated
+  const [frames, setFrames] = useState<object[]>([{}])
+  const [currentFrame, setCurrentFrame] = useState(0)
+  const [history, setHistory] = useState<object[][]>([[{}]])
+  const [historyIndex, setHistoryIndex] = useState(0)
+  const [isReady, setIsReady] = useState(false)
+
+  // Keep onChange ref current
   useEffect(() => {
     onChangeRef.current = onChange
   }, [onChange])
 
-  // Canvas dimensions
-  const CANVAS_WIDTH = 800
-  const CANVAS_HEIGHT = 400
-
-  // Load court image
+  // Initialize Fabric canvas once
   useEffect(() => {
-    const img = new Image()
-    img.src = "/volleyball-court.jpg"
-    img.onload = () => {
-      setCourtImage(img)
+    let cancelled = false
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let fc: any = null
+
+    async function init() {
+      const fabric = await import("fabric")
+      if (!canvasElRef.current || cancelled) return
+
+      fc = new fabric.Canvas(canvasElRef.current, {
+        width: CANVAS_WIDTH,
+        height: CANVAS_HEIGHT,
+        selection: true,
+        selectionColor: "rgba(59,130,246,0.15)",
+        selectionBorderColor: "#3B82F6",
+        selectionLineWidth: 1,
+      })
+      fabricRef.current = fc
+
+      // Court background
+      fabric.FabricImage.fromURL("/volleyball-court.jpg").then((img: any) => {
+        if (!fc || cancelled) return
+        img.set({
+          left: 0,
+          top: 0,
+          scaleX: CANVAS_WIDTH / (img.width || CANVAS_WIDTH),
+          scaleY: CANVAS_HEIGHT / (img.height || CANVAS_HEIGHT),
+          selectable: false,
+          evented: false,
+          excludeFromExport: true,
+        })
+        fc.backgroundImage = img
+        fc.renderAll()
+      })
+
+      // Load initial diagram
+      if (initialDiagram) {
+        try {
+          const parsed = JSON.parse(initialDiagram)
+          if (parsed?.frames?.length) {
+            const frameIdx = parsed.currentFrame ?? 0
+            const frameData = parsed.frames[frameIdx] ?? parsed.frames[0]
+            isLoadingRef.current = true
+            await fc.loadFromJSON(frameData)
+            fc.renderAll()
+            isLoadingRef.current = false
+            setFrames(parsed.frames)
+            setCurrentFrame(frameIdx)
+            setHistory([parsed.frames])
+            setHistoryIndex(0)
+          }
+        } catch {
+          // Old format or invalid — start fresh
+        }
+      }
+
+      setIsReady(true)
     }
+
+    init()
+    return () => {
+      cancelled = true
+      if (fc) {
+        try { fc.dispose() } catch { /* ignore */ }
+      }
+      fabricRef.current = null
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Load initial diagram only once
-  const [isInitialized, setIsInitialized] = useState(false)
-  
+  // Sync tool mode
   useEffect(() => {
-    if (initialDiagram && !isInitialized) {
-      try {
-        const parsed = JSON.parse(initialDiagram)
-        setElements(parsed)
-        setIsInitialized(true)
-      } catch (err) {
-        console.error("Failed to parse initial diagram:", err)
-        setIsInitialized(true)
-      }
-    }
-  }, [initialDiagram, isInitialized])
-
-  useEffect(() => {
-    drawCanvas()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [elements, currentPoints, courtImage])
-
-  // Only notify parent when elements actually change (skip initial load)
-  useEffect(() => {
-    if (isInitialized || elements.length > 0) {
-      onChangeRef.current(JSON.stringify(elements))
-    }
-  }, [elements, isInitialized])
-
-  const drawCanvas = () => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    
-    const ctx = canvas.getContext("2d")
-    if (!ctx) return
-
-    // Clear canvas
-    ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
-    
-    // Draw court image as background
-    if (courtImage) {
-      ctx.drawImage(courtImage, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
-    } else {
-      // Fallback: simple court background if image not loaded
-      ctx.fillStyle = "#E8F4F8"
-      ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
-    }
-
-    // Draw all elements
-    elements.forEach(element => {
-      drawElement(ctx, element)
+    const fc = fabricRef.current
+    if (!fc || !isReady) return
+    fc.isDrawingMode = false
+    fc.selection = tool === "select"
+    fc.getObjects().forEach((obj: any) => {
+      obj.selectable = tool === "select"
+      obj.evented = tool === "select"
     })
+    fc.defaultCursor = tool === "select" ? "default" : "crosshair"
+    fc.renderAll()
+  }, [tool, isReady])
 
-    // Draw current drawing
-    if (currentPoints.length > 0) {
-      const tempElement: DrawingElement = {
-        type: tool,
-        points: currentPoints,
-        color: color
+  const snapshotCanvas = useCallback((): object => {
+    const fc = fabricRef.current
+    if (!fc) return {}
+    return fc.toJSON(["excludeFromExport", "data"])
+  }, [])
+
+  const notifyParent = useCallback((newFrames: object[], frame: number) => {
+    onChangeRef.current(serializeDiagram(newFrames, frame))
+  }, [])
+
+  const pushHistory = useCallback(
+    (newFrames: object[]) => {
+      setHistory((prev) => {
+        const trimmed = prev.slice(0, historyIndex + 1)
+        return [...trimmed, newFrames]
+      })
+      setHistoryIndex((prev) => prev + 1)
+    },
+    [historyIndex]
+  )
+
+  const commitFrame = useCallback(() => {
+    if (isLoadingRef.current) return
+    const fc = fabricRef.current
+    if (!fc) return
+    const snapshot = snapshotCanvas()
+    setFrames((prev) => {
+      const updated = [...prev]
+      updated[currentFrame] = snapshot
+      pushHistory(updated)
+      notifyParent(updated, currentFrame)
+      return updated
+    })
+  }, [currentFrame, snapshotCanvas, pushHistory, notifyParent])
+
+  // Attach fabric event listeners
+  useEffect(() => {
+    const fc = fabricRef.current
+    if (!fc || !isReady) return
+    const onModified = () => commitFrame()
+    fc.on("object:added", onModified)
+    fc.on("object:modified", onModified)
+    fc.on("object:removed", onModified)
+    return () => {
+      fc.off("object:added", onModified)
+      fc.off("object:modified", onModified)
+      fc.off("object:removed", onModified)
+    }
+  }, [isReady, commitFrame])
+
+  // Place objects on click
+  const handleCanvasClick = useCallback(
+    async (e: React.MouseEvent<HTMLCanvasElement>) => {
+      if (tool === "select") return
+      const fc = fabricRef.current
+      if (!fc) return
+
+      const rect = e.currentTarget.getBoundingClientRect()
+      const x = e.clientX - rect.left
+      const y = e.clientY - rect.top
+
+      const fabric = await import("fabric")
+
+      if (tool === "player") {
+        const playerCount = fc.getObjects().filter((o: any) => o.data?.type === "player").length
+        const circle = new fabric.Circle({
+          radius: 18,
+          fill: color,
+          stroke: "#fff",
+          strokeWidth: 2,
+          originX: "center",
+          originY: "center",
+        })
+        const label = new fabric.FabricText(String(playerCount + 1), {
+          fontSize: 14,
+          fontWeight: "bold",
+          fill: "#fff",
+          originX: "center",
+          originY: "center",
+          selectable: false,
+          evented: false,
+        })
+        const group = new fabric.Group([circle, label], {
+          left: x - 18,
+          top: y - 18,
+          data: { type: "player" },
+        } as any)
+        fc.add(group)
+      } else if (tool === "opponent") {
+        const circle = new fabric.Circle({
+          radius: 18,
+          fill: "transparent",
+          stroke: color,
+          strokeWidth: 3,
+          originX: "center",
+          originY: "center",
+        })
+        const cross1 = new fabric.Line([-12, -12, 12, 12] as [number,number,number,number], {
+          stroke: color,
+          strokeWidth: 2,
+          originX: "center",
+          originY: "center",
+        })
+        const cross2 = new fabric.Line([-12, 12, 12, -12] as [number,number,number,number], {
+          stroke: color,
+          strokeWidth: 2,
+          originX: "center",
+          originY: "center",
+        })
+        const group = new fabric.Group([circle, cross1, cross2], {
+          left: x - 18,
+          top: y - 18,
+          data: { type: "opponent" },
+        } as any)
+        fc.add(group)
+      } else if (tool === "cone") {
+        const cone = new fabric.Path("M 0 -20 L 14 14 L -14 14 Z", {
+          fill: color,
+          stroke: "#000",
+          strokeWidth: 1,
+          left: x,
+          top: y,
+          originX: "center",
+          originY: "center",
+          data: { type: "cone" },
+        } as any)
+        fc.add(cone)
+      } else if (tool === "ball") {
+        const ball = new fabric.Circle({
+          left: x - 12,
+          top: y - 12,
+          radius: 12,
+          fill: "#f5e642",
+          stroke: "#555",
+          strokeWidth: 2,
+          data: { type: "ball" },
+        } as any)
+        fc.add(ball)
+      } else if (tool === "net") {
+        const netLine = new fabric.Line([x - 60, y, x + 60, y] as [number,number,number,number], {
+          stroke: color,
+          strokeWidth: 5,
+          strokeDashArray: [8, 4],
+          data: { type: "net" },
+        } as any)
+        fc.add(netLine)
+      } else if (tool === "zone") {
+        const zone = new fabric.Rect({
+          left: x - 50,
+          top: y - 30,
+          width: 100,
+          height: 60,
+          fill: color + "33",
+          stroke: color,
+          strokeWidth: 2,
+          data: { type: "zone" },
+        } as any)
+        fc.add(zone)
+      } else if (tool === "text") {
+        const text = new fabric.FabricText("Label", {
+          left: x,
+          top: y,
+          fontSize: 16,
+          fontWeight: "bold",
+          fill: color,
+          data: { type: "text" },
+        } as any)
+        fc.add(text)
+        fc.setActiveObject(text)
+      } else if (tool === "line") {
+        const line = new fabric.Line([x - 40, y, x + 40, y] as [number,number,number,number], {
+          stroke: color,
+          strokeWidth: 3,
+          strokeLineCap: "round",
+          data: { type: "line" },
+        } as any)
+        fc.add(line)
+      } else if (tool === "dashed-line") {
+        const dashed = new fabric.Line([x - 40, y, x + 40, y] as [number,number,number,number], {
+          stroke: color,
+          strokeWidth: 2,
+          strokeDashArray: [10, 6],
+          data: { type: "dashed-line" },
+        } as any)
+        fc.add(dashed)
+      } else if (tool === "arrow") {
+        const shaft = new fabric.Line([0, 0, 80, 0] as [number,number,number,number], {
+          stroke: color,
+          strokeWidth: 3,
+          strokeLineCap: "round",
+          originX: "left",
+          originY: "center",
+        })
+        const head = new fabric.Path("M 0 -8 L 18 0 L 0 8 Z", {
+          fill: color,
+          left: 80,
+          top: 0,
+          originX: "left",
+          originY: "center",
+        })
+        const group = new fabric.Group([shaft, head], {
+          left: x - 40,
+          top: y,
+          data: { type: "arrow" },
+        } as any)
+        fc.add(group)
+      } else if (tool === "curved-arrow") {
+        const curve = new fabric.Path("M -60 20 Q 0 -40 60 20", {
+          fill: "transparent",
+          stroke: color,
+          strokeWidth: 3,
+          strokeLineCap: "round",
+          originX: "center",
+          originY: "center",
+        })
+        const head = new fabric.Path("M 0 -8 L 18 0 L 0 8 Z", {
+          fill: color,
+          left: 60,
+          top: 20,
+          angle: 35,
+          originX: "center",
+          originY: "center",
+        })
+        const group = new fabric.Group([curve, head], {
+          left: x,
+          top: y,
+          data: { type: "curved-arrow" },
+        } as any)
+        fc.add(group)
       }
-      drawElement(ctx, tempElement)
-    }
-  }
 
-  const drawElement = (ctx: CanvasRenderingContext2D, element: DrawingElement) => {
-    ctx.strokeStyle = element.color
-    ctx.fillStyle = element.color
-    ctx.lineWidth = 3
+      fc.renderAll()
+    },
+    [tool, color]
+  )
 
-    if (element.type === "line") {
-      if (element.points.length >= 2) {
-        ctx.beginPath()
-        ctx.moveTo(element.points[0].x, element.points[0].y)
-        for (let i = 1; i < element.points.length; i++) {
-          ctx.lineTo(element.points[i].x, element.points[i].y)
-        }
-        ctx.stroke()
-      }
-    } else if (element.type === "arrow") {
-      if (element.points.length >= 2) {
-        const start = element.points[0]
-        const end = element.points[element.points.length - 1]
-        
-        // Draw line
-        ctx.beginPath()
-        ctx.moveTo(start.x, start.y)
-        ctx.lineTo(end.x, end.y)
-        ctx.stroke()
-        
-        // Draw arrowhead
-        const angle = Math.atan2(end.y - start.y, end.x - start.x)
-        const headLength = 15
-        
-        ctx.beginPath()
-        ctx.moveTo(end.x, end.y)
-        ctx.lineTo(
-          end.x - headLength * Math.cos(angle - Math.PI / 6),
-          end.y - headLength * Math.sin(angle - Math.PI / 6)
-        )
-        ctx.moveTo(end.x, end.y)
-        ctx.lineTo(
-          end.x - headLength * Math.cos(angle + Math.PI / 6),
-          end.y - headLength * Math.sin(angle + Math.PI / 6)
-        )
-        ctx.stroke()
-      }
-    } else if (element.type === "circle") {
-      if (element.points.length >= 2) {
-        const center = element.points[0]
-        const edge = element.points[element.points.length - 1]
-        const radius = Math.sqrt(
-          Math.pow(edge.x - center.x, 2) + Math.pow(edge.y - center.y, 2)
-        )
-        
-        ctx.beginPath()
-        ctx.arc(center.x, center.y, radius, 0, 2 * Math.PI)
-        ctx.stroke()
-      }
-    } else if (element.type === "player") {
-      if (element.points.length >= 1) {
-        const point = element.points[0]
-        const radius = 15
-        
-        // Draw circle for player
-        ctx.beginPath()
-        ctx.arc(point.x, point.y, radius, 0, 2 * Math.PI)
-        ctx.fill()
-        
-        // Draw label if exists
-        if (element.label) {
-          ctx.fillStyle = "#FFFFFF"
-          ctx.font = "bold 12px sans-serif"
-          ctx.textAlign = "center"
-          ctx.textBaseline = "middle"
-          ctx.fillText(element.label, point.x, point.y)
-        }
-      }
-    }
-  }
+  const handleUndo = useCallback(async () => {
+    if (historyIndex <= 0) return
+    const newIndex = historyIndex - 1
+    const prevFrames = history[newIndex]
+    const fc = fabricRef.current
+    if (!fc) return
+    isLoadingRef.current = true
+    await fc.loadFromJSON(prevFrames[currentFrame] ?? {})
+    fc.renderAll()
+    isLoadingRef.current = false
+    setFrames(prevFrames)
+    setHistoryIndex(newIndex)
+    notifyParent(prevFrames, currentFrame)
+  }, [historyIndex, history, currentFrame, notifyParent])
 
-  const getMousePos = (e: React.MouseEvent<HTMLCanvasElement>): Point => {
-    const canvas = canvasRef.current
-    if (!canvas) return { x: 0, y: 0 }
-    
-    const rect = canvas.getBoundingClientRect()
-    return {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top
-    }
-  }
+  const handleRedo = useCallback(async () => {
+    if (historyIndex >= history.length - 1) return
+    const newIndex = historyIndex + 1
+    const nextFrames = history[newIndex]
+    const fc = fabricRef.current
+    if (!fc) return
+    isLoadingRef.current = true
+    await fc.loadFromJSON(nextFrames[currentFrame] ?? {})
+    fc.renderAll()
+    isLoadingRef.current = false
+    setFrames(nextFrames)
+    setHistoryIndex(newIndex)
+    notifyParent(nextFrames, currentFrame)
+  }, [historyIndex, history, currentFrame, notifyParent])
 
-  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const pos = getMousePos(e)
-    setIsDrawing(true)
-    setCurrentPoints([pos])
-  }
+  const handleClear = useCallback(() => {
+    const fc = fabricRef.current
+    if (!fc) return
+    fc.getObjects()
+      .filter((obj: any) => !obj.excludeFromExport)
+      .forEach((obj: any) => fc.remove(obj))
+    fc.renderAll()
+  }, [])
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDrawing) return
-    
-    const pos = getMousePos(e)
-    
-    if (tool === "line") {
-      setCurrentPoints([...currentPoints, pos])
-    } else {
-      setCurrentPoints([currentPoints[0], pos])
-    }
-  }
+  const handleDeleteSelected = useCallback(() => {
+    const fc = fabricRef.current
+    if (!fc) return
+    fc.getActiveObjects().forEach((obj: any) => fc.remove(obj))
+    fc.discardActiveObject()
+    fc.renderAll()
+  }, [])
 
-  const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDrawing) return
-    
-    const pos = getMousePos(e)
-    let finalPoints = currentPoints
+  const handleExportPNG = useCallback(() => {
+    const fc = fabricRef.current
+    if (!fc) return
+    const dataURL = fc.toDataURL({ format: "png", multiplier: 2 })
+    const a = document.createElement("a")
+    a.href = dataURL
+    a.download = "diagram.png"
+    a.click()
+  }, [])
 
-    if (tool !== "line") {
-      finalPoints = [currentPoints[0], pos]
-    }
+  const handleAddFrame = useCallback(() => {
+    const snapshot = snapshotCanvas()
+    const newFrames = [...frames]
+    newFrames[currentFrame] = snapshot
+    const newIdx = currentFrame + 1
+    newFrames.splice(newIdx, 0, {})
+    pushHistory(newFrames)
+    setFrames(newFrames)
+    setCurrentFrame(newIdx)
+    const fc = fabricRef.current
+    if (!fc) return
+    fc.getObjects()
+      .filter((obj: any) => !obj.excludeFromExport)
+      .forEach((obj: any) => fc.remove(obj))
+    fc.renderAll()
+    notifyParent(newFrames, newIdx)
+  }, [frames, currentFrame, snapshotCanvas, pushHistory, notifyParent])
 
-    if (finalPoints.length > 0) {
-      const newElement: DrawingElement = {
-        type: tool,
-        points: finalPoints,
-        color: color,
-        label: tool === "player" ? String(elements.filter(e => e.type === "player").length + 1) : undefined
-      }
-      
-      setElements([...elements, newElement])
-    }
+  const handleSwitchFrame = useCallback(
+    async (idx: number) => {
+      if (idx === currentFrame) return
+      const fc = fabricRef.current
+      if (!fc) return
+      const snapshot = snapshotCanvas()
+      const newFrames = [...frames]
+      newFrames[currentFrame] = snapshot
+      isLoadingRef.current = true
+      await fc.loadFromJSON(newFrames[idx] ?? {})
+      fc.renderAll()
+      isLoadingRef.current = false
+      setFrames(newFrames)
+      setCurrentFrame(idx)
+      notifyParent(newFrames, idx)
+    },
+    [currentFrame, frames, snapshotCanvas, notifyParent]
+  )
 
-    setIsDrawing(false)
-    setCurrentPoints([])
-  }
+  const handleDeleteFrame = useCallback(async () => {
+    if (frames.length <= 1) return
+    const newFrames = frames.filter((_, i) => i !== currentFrame)
+    const newIdx = Math.min(currentFrame, newFrames.length - 1)
+    const fc = fabricRef.current
+    if (!fc) return
+    isLoadingRef.current = true
+    await fc.loadFromJSON(newFrames[newIdx] ?? {})
+    fc.renderAll()
+    isLoadingRef.current = false
+    pushHistory(newFrames)
+    setFrames(newFrames)
+    setCurrentFrame(newIdx)
+    notifyParent(newFrames, newIdx)
+  }, [frames, currentFrame, pushHistory, notifyParent])
 
-  const handleClear = () => {
-    setElements([])
-  }
-
-  const handleUndo = () => {
-    if (elements.length > 0) {
-      setElements(elements.slice(0, -1))
-    }
-  }
+  const toolGroups = [
+    {
+      label: "Players",
+      tools: [
+        { id: "player" as ToolType, label: "Player" },
+        { id: "opponent" as ToolType, label: "Opponent" },
+      ],
+    },
+    {
+      label: "Objects",
+      tools: [
+        { id: "ball" as ToolType, label: "Ball" },
+        { id: "cone" as ToolType, label: "Cone" },
+        { id: "net" as ToolType, label: "Net" },
+        { id: "zone" as ToolType, label: "Zone" },
+        { id: "text" as ToolType, label: "Text" },
+      ],
+    },
+    {
+      label: "Lines",
+      tools: [
+        { id: "arrow" as ToolType, label: "Arrow" },
+        { id: "curved-arrow" as ToolType, label: "Curved" },
+        { id: "line" as ToolType, label: "Line" },
+        { id: "dashed-line" as ToolType, label: "Dashed" },
+      ],
+    },
+  ]
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Toolbar */}
-      <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg border">
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => setTool("player")}
-            className={`px-3 py-2 rounded border ${
-              tool === "player" 
-                ? "bg-blue-600 text-white border-blue-600" 
-                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-            }`}
-          >
-            👤 Player
-          </button>
-          <button
-            type="button"
-            onClick={() => setTool("arrow")}
-            className={`px-3 py-2 rounded border ${
-              tool === "arrow" 
-                ? "bg-blue-600 text-white border-blue-600" 
-                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-            }`}
-          >
-            → Arrow
-          </button>
-          <button
-            type="button"
-            onClick={() => setTool("line")}
-            className={`px-3 py-2 rounded border ${
-              tool === "line" 
-                ? "bg-blue-600 text-white border-blue-600" 
-                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-            }`}
-          >
-            ✏️ Line
-          </button>
-          <button
-            type="button"
-            onClick={() => setTool("circle")}
-            className={`px-3 py-2 rounded border ${
-              tool === "circle" 
-                ? "bg-blue-600 text-white border-blue-600" 
-                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-            }`}
-          >
-            ⭕ Circle
-          </button>
-        </div>
+      <div className="flex flex-wrap items-center gap-3 p-3 bg-gray-50 rounded-lg border text-sm">
+        <button
+          type="button"
+          onClick={() => setTool("select")}
+          className={`px-3 py-1.5 rounded border font-medium ${
+            tool === "select"
+              ? "bg-blue-600 text-white border-blue-600"
+              : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+          }`}
+        >
+          Select
+        </button>
 
-        <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-gray-700">Color:</label>
+        <div className="w-px h-6 bg-gray-300" />
+
+        {toolGroups.map((group) => (
+          <div key={group.label} className="flex items-center gap-1">
+            <span className="text-xs text-gray-400 mr-1">{group.label}:</span>
+            {group.tools.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setTool(t.id)}
+                className={`px-2.5 py-1.5 rounded border ${
+                  tool === t.id
+                    ? "bg-blue-600 text-white border-blue-600"
+                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        ))}
+
+        <div className="w-px h-6 bg-gray-300" />
+
+        <div className="flex items-center gap-1.5">
+          <label className="text-xs text-gray-500">Color:</label>
           <input
             type="color"
             value={color}
             onChange={(e) => setColor(e.target.value)}
-            className="h-9 w-16 rounded border border-gray-300 cursor-pointer"
+            className="h-8 w-12 rounded border border-gray-300 cursor-pointer"
           />
         </div>
 
-        <div className="flex gap-2 ml-auto">
+        <div className="flex gap-1.5 ml-auto">
           <button
             type="button"
             onClick={handleUndo}
-            disabled={elements.length === 0}
-            className="px-3 py-2 bg-white text-gray-700 rounded border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={historyIndex <= 0}
+            className="px-2.5 py-1.5 bg-white text-gray-700 rounded border border-gray-300 hover:bg-gray-50 disabled:opacity-40"
           >
-            ↶ Undo
+            Undo
+          </button>
+          <button
+            type="button"
+            onClick={handleRedo}
+            disabled={historyIndex >= history.length - 1}
+            className="px-2.5 py-1.5 bg-white text-gray-700 rounded border border-gray-300 hover:bg-gray-50 disabled:opacity-40"
+          >
+            Redo
+          </button>
+          <button
+            type="button"
+            onClick={handleDeleteSelected}
+            className="px-2.5 py-1.5 bg-white text-gray-700 rounded border border-gray-300 hover:bg-gray-50"
+          >
+            Delete
           </button>
           <button
             type="button"
             onClick={handleClear}
-            disabled={elements.length === 0}
-            className="px-3 py-2 bg-red-50 text-red-700 rounded border border-red-200 hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-2.5 py-1.5 bg-red-50 text-red-700 rounded border border-red-200 hover:bg-red-100"
           >
-            🗑️ Clear
+            Clear
+          </button>
+          <button
+            type="button"
+            onClick={handleExportPNG}
+            className="px-2.5 py-1.5 bg-white text-gray-700 rounded border border-gray-300 hover:bg-gray-50"
+          >
+            Export PNG
           </button>
         </div>
       </div>
 
       {/* Canvas */}
-      <div className="border-2 border-gray-300 rounded-lg overflow-hidden">
-        <canvas
-          ref={canvasRef}
-          width={CANVAS_WIDTH}
-          height={CANVAS_HEIGHT}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={() => {
-            if (isDrawing) {
-              setIsDrawing(false)
-              setCurrentPoints([])
-            }
-          }}
-          className="cursor-crosshair"
-        />
+      <div
+        className="border-2 border-gray-300 rounded-lg overflow-hidden"
+        style={{ width: CANVAS_WIDTH, maxWidth: "100%" }}
+      >
+        <canvas ref={canvasElRef} onClick={handleCanvasClick} />
       </div>
 
-      <p className="text-sm text-gray-600">
-        Click and drag to draw on the volleyball court. Use the tools to add players, movement arrows, lines, and circles.
+      {/* Frame controls */}
+      <div className="flex items-center gap-2 text-sm">
+        <span className="text-gray-500 text-xs">Frames:</span>
+        {frames.map((_, idx) => (
+          <button
+            key={idx}
+            type="button"
+            onClick={() => handleSwitchFrame(idx)}
+            className={`w-8 h-8 rounded border text-xs font-medium ${
+              idx === currentFrame
+                ? "bg-blue-600 text-white border-blue-600"
+                : "bg-white text-gray-600 border-gray-300 hover:bg-gray-50"
+            }`}
+          >
+            {idx + 1}
+          </button>
+        ))}
+        <button
+          type="button"
+          onClick={handleAddFrame}
+          className="px-2 py-1 bg-white text-gray-600 rounded border border-gray-300 hover:bg-gray-50 text-xs"
+        >
+          + Frame
+        </button>
+        {frames.length > 1 && (
+          <button
+            type="button"
+            onClick={handleDeleteFrame}
+            className="px-2 py-1 bg-red-50 text-red-600 rounded border border-red-200 hover:bg-red-100 text-xs"
+          >
+            Delete Frame
+          </button>
+        )}
+      </div>
+
+      <p className="text-xs text-gray-500">
+        Click to place objects. Switch to &quot;Select&quot; mode to drag, resize, or delete.
+        {tool !== "select" && (
+          <span className="ml-1 font-medium text-blue-600">Active: {tool}</span>
+        )}
       </p>
     </div>
   )
